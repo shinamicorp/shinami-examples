@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@mysten/sui.js": "0.32.1",
+    "typed-rpc": "^3.0.0"
+  }
+}
