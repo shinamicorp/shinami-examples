@@ -100,10 +100,10 @@ const progTxnMoveCall = async() => {
         target: "<PACKAGE_ADDRESS>::<MODULE_NAME>::<METHOD_NAME>",
         arguments: [
             // the custom args to this move call
-            txb.pure(<PURE_VALUE>),
-            txb.pure(<PURE_VALUE>),
-            txb.object("<OBJECT_ID>")
-            ...
+            //txb.pure(<PURE_VALUE>),
+            //txb.pure(<PURE_VALUE>),
+            //txb.object("<OBJECT_ID>")
+            //...
         ]
     });
     return txb;
