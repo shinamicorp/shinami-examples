@@ -51,7 +51,7 @@ interface SponsorRpc {
 const sponsor = rpcClient<SponsorRpc>(SPONSOR_RPC_URL);
 
 // Different examples of programmable transaction blocks that can be crafted.
-const progTxnTransfer = async() => {
+const progTxnTransfer = () => {
     // The receiver of a transaction
     const RECIPIENT_ADDRESS = "<SUI_ADDRESS>";
 
@@ -69,7 +69,7 @@ const progTxnTransfer = async() => {
     return txb;
 }
 
-const progTxnSplit = async() => {
+const progTxnSplit = () => {
     const COIN_TO_SPLIT = "<COIN_OBJECT_ID>";
 
     const txb = new TransactionBlock();
@@ -85,7 +85,7 @@ const progTxnSplit = async() => {
     return txb;
 }
 
-const progTxnMerge = async() => {
+const progTxnMerge = () => {
     const COIN_TARGET = "<COIN_OBJECT_ID>";
     const COIN_SOURCE1 = "<COIN_OBJECT_ID>";
     const COIN_SOURCE2 = "<COIN_OBJECT_ID>";
@@ -94,7 +94,7 @@ const progTxnMerge = async() => {
     return txb;
 }
 
-const progTxnMoveCall = async() => {
+const progTxnMoveCall = () => {
     const txb = new TransactionBlock();
     txb.moveCall({
         target: "<PACKAGE_ADDRESS>::<MODULE_NAME>::<METHOD_NAME>",
@@ -111,10 +111,10 @@ const progTxnMoveCall = async() => {
 
 const sponsorTransactionE2E = async() => {
     // get the gasless TransactionBlock for the desired programmable transaction
-    const gaslessTxb = await progTxnTransfer();
-    //const gaslessTxb = await progTxnSplit();
-    //const gaslessTxb = await progTxnMerge();
-    //const gaslessTxb = await progTxnMoveCall();
+    const gaslessTxb = progTxnTransfer();
+    //const gaslessTxb = progTxnSplit();
+    //const gaslessTxb = progTxnMerge();
+    //const gaslessTxb = progTxnMoveCall();
 
     // generate the bcs serialized transaction data without any gas object data
     const gaslessPayloadBytes = await gaslessTxb.build({ provider: suiProvider, onlyTransactionKind: true});
