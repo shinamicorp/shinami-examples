@@ -37,7 +37,8 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
-typescript/build/*
+gas-station/typescript/build/*
+in-app-wallet/typescript/build/*
 
 # Dependency directories
 node_modules/
