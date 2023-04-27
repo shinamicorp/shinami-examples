@@ -2,15 +2,16 @@ import {
     Connection, 
     JsonRpcProvider, 
     TransactionBlock,
-    SuiTransactionBlockResponse
+    SuiTransactionBlockResponse,
+    ExecuteTransactionRequestType,
 } from "@mysten/sui.js";
 import { rpcClient } from "typed-rpc";
 
 // The Key Service is Shinami's secure and stateless way to get access to the In-App Wallet
-const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/<API_ACCESS_KEY>";
+const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
 
 // The Wallet Service is the endpoint to issue calls on behalf of the wallet.
-const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/<API_ACCESS_KEY>";
+const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
 
 // Shinami Sui Node endpoint + Mysten provided faucet endpoint:
 const connection = new Connection({
@@ -27,7 +28,13 @@ const GAS_BUDGET = 5000000;
 interface KeyServiceRpc {
     shinami_key_createSession(secret: string): string;
 }
-const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL);
+const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
+    getHeaders() {
+        return {
+            "X-API-Key": "<API_ACCESS_KEY>"
+        };
+    },
+});
   
 // Wallet Service interaction setup
 interface WalletServiceRpc {
@@ -40,11 +47,17 @@ interface WalletServiceRpc {
         txBytes: string, 
         gasBudget: number, 
         options?: {}, 
-        requestType?: string
+        requestType?: ExecuteTransactionRequestType
     ): SuiTransactionBlockResponse;
 }
   
-const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL);
+const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
+    getHeaders() {
+        return {
+            "X-API-Key": "<API_ACCESS_KEY>"
+        };
+    },
+});
 
 // Create a programmable transaction block to split off two new coins of value 10,000 and 20,000 MIST.
 
@@ -88,7 +101,7 @@ const progTxnSplit = (sender:string, sourceCoinId:string) => {
 const inAppWalletE2E = async() => {
     // Create an ephemeral session token to access In-App Wallet functionality
     const sessionToken = await keyService.shinami_key_createSession(secret);  
-    
+
     // Create a new wallet (can only be done once with the same walletId)
     const createdWalletAddress = await walletService.shinami_wal_createWallet(walletId, sessionToken);
     
