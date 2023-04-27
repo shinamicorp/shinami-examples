@@ -125,7 +125,7 @@ const inAppWalletE2E = async() => {
     console.log("Execution Status:", executeResponseFull.effects?.status.status);
 
     // Get the transaction block of the gasless transaction
- 	const txbGasless = progTxnSplitGasless(walletAddress, sourceCoinId);
+    const txbGasless = progTxnSplitGasless(walletAddress, sourceCoinId);
 
     // Generate the bcs serialized transaction payload
     const payloadBytesGasless = await txbGasless.build({ provider: suiProvider, onlyTransactionKind: true });
