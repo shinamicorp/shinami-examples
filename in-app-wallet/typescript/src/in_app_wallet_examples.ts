@@ -15,14 +15,16 @@ const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
 
 // Shinami Sui Node endpoint + Mysten provided faucet endpoint:
 const connection = new Connection({
-    fullnode: 'https://node.shinami.com/api/v1/<API_ACCESS_KEY>',
-    faucet: 'https://faucet.testnet.sui.io/gas'
+    fullnode: 'https://api.shinami.com/node/v1/<API_ACCESS_KEY>',
 });
 
 const suiProvider = new JsonRpcProvider(connection);
 const walletId = "<WALLET_ID>";
 const secret = "<SECRET>";
 const GAS_BUDGET = 5000000;
+
+// You can send testnet Sui to your wallet address via the Sui Discord testnet faucet
+const sourceCoinId = "<COIN_ID>";
 
 // Key Service interaction setup
 interface KeyServiceRpc {
@@ -35,12 +37,13 @@ const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
         };
     },
 });
-  
+
 // Wallet Service interaction setup
 interface WalletServiceRpc {
     shinami_wal_createWallet(walletId: string, sessionToken: string): string;
     shinami_wal_getWallet(walletId: string): string;
-    shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string): string;
+    shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
+        SignTransactionResult;
     shinami_wal_executeGaslessTransactionBlock(
         walletId: string, 
         sessionToken: string, 
@@ -50,7 +53,12 @@ interface WalletServiceRpc {
         requestType?: ExecuteTransactionRequestType
     ): SuiTransactionBlockResponse;
 }
-  
+
+interface SignTransactionResult {
+    signature: string;
+    txDigest: string;
+}
+
 const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
     getHeaders() {
         return {
@@ -64,7 +72,7 @@ const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
 // The transaction block without gas context
 const progTxnSplitGasless = (sender:string, sourceCoinId:string) => {
     const txb = new TransactionBlock();
-      
+
     // Split two new coins out of sourceCoinId, one with 10000 balance, and the other with 20000
     const [coin1, coin2] = txb.splitCoins(
         txb.object(sourceCoinId),
@@ -77,11 +85,11 @@ const progTxnSplitGasless = (sender:string, sourceCoinId:string) => {
     );
     return txb;
 }
-  
+
 // The transaction block with gas context 
 const progTxnSplit = (sender:string, sourceCoinId:string) => {
     const txb = new TransactionBlock();
-      
+
     // Split two new coins out of sourceCoinId, one with 10000 balance, and the other with 20000
     const [coin1, coin2] = txb.splitCoins(
         txb.object(sourceCoinId),
@@ -100,17 +108,15 @@ const progTxnSplit = (sender:string, sourceCoinId:string) => {
 
 const inAppWalletE2E = async() => {
     // Create an ephemeral session token to access In-App Wallet functionality
-    const sessionToken = await keyService.shinami_key_createSession(secret);  
+    const sessionToken = await keyService.shinami_key_createSession(secret);
 
-    // Create a new wallet (can only be done once with the same walletId)
+    // Create a new wallet (can only be done once with the same walletId). Make
+    // sure to transfer Sui coins to your wallet before trying to run the
+    // following transactions
     const createdWalletAddress = await walletService.shinami_wal_createWallet(walletId, sessionToken);
-    
+
     // Retrieve the wallet address via the walletId. Should be the same as createdWalletAddress
     const walletAddress = await walletService.shinami_wal_getWallet(walletId);
-
-    // Deposit some SUI to the wallet via the faucet
-    const faucetResponse = await suiProvider.requestSuiFromFaucet(walletAddress);
-    const sourceCoinId = faucetResponse.transferredGasObjects[0].id;
 
     // Get the transaction block of the full transaction.
     const txbFull = progTxnSplit(walletAddress, sourceCoinId);
@@ -130,7 +136,7 @@ const inAppWalletE2E = async() => {
     const executeResponseFull = await suiProvider.executeTransactionBlock(
         {
             transactionBlock: payloadBytesFullBase64,
-            signature: sig,
+            signature: sig.signature,
             options: {showEffects: true},
             requestType: "WaitForLocalExecution"
         }
@@ -142,12 +148,12 @@ const inAppWalletE2E = async() => {
 
     // Generate the bcs serialized transaction payload
     const payloadBytesGasless = await txbGasless.build({ provider: suiProvider, onlyTransactionKind: true });
- 
+
     // Convert the payload byte array to a base64 encoded string
     const payloadBytesGaslessBase64 = btoa(
         payloadBytesGasless.reduce((data, byte) => data + String.fromCharCode(byte), '')
     );
- 
+
     // Sponsor and execute the transaction with one call
     const executeResponseGasless = await walletService.shinami_wal_executeGaslessTransactionBlock(
         walletId,
