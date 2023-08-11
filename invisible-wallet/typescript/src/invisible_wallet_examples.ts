@@ -7,7 +7,7 @@ import {
 } from "@mysten/sui.js";
 import { rpcClient } from "typed-rpc";
 
-// The Key Service is Shinami's secure and stateless way to get access to the In-App Wallet
+// The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
 const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
 
 // The Wallet Service is the endpoint to issue calls on behalf of the wallet.
@@ -106,8 +106,8 @@ const progTxnSplit = (sender:string, sourceCoinId:string) => {
     return txb;
 }
 
-const inAppWalletE2E = async() => {
-    // Create an ephemeral session token to access In-App Wallet functionality
+const invisibleWalletE2E = async() => {
+    // Create an ephemeral session token to access Invisible Wallet functionality
     const sessionToken = await keyService.shinami_key_createSession(secret);
 
     // Create a new wallet (can only be done once with the same walletId). Make
@@ -173,4 +173,4 @@ const inAppWalletE2E = async() => {
     console.log("Execution Status:", executeResponseGasless.effects?.status.status);
 }
 
-inAppWalletE2E();
+invisibleWalletE2E();
