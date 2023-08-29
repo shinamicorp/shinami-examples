@@ -1,10 +1,5 @@
-import { 
-    Connection, 
-    JsonRpcProvider, 
-    TransactionBlock,
-    SuiTransactionBlockResponse,
-    ExecuteTransactionRequestType,
-} from "@mysten/sui.js";
+import { ExecuteTransactionRequestType, SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client";
+import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { rpcClient } from "typed-rpc";
 
 // The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
@@ -13,12 +8,10 @@ const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
 // The Wallet Service is the endpoint to issue calls on behalf of the wallet.
 const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
 
-// Shinami Sui Node endpoint + Mysten provided faucet endpoint:
-const connection = new Connection({
-    fullnode: 'https://api.shinami.com/node/v1/<API_ACCESS_KEY>',
+const suiClient = new SuiClient({
+    // Shinami Sui Node endpoint + Mysten provided faucet endpoint:
+    url: 'https://api.shinami.com/node/v1/<API_ACCESS_KEY>'
 });
-
-const suiProvider = new JsonRpcProvider(connection);
 const walletId = "<WALLET_ID>";
 const secret = "<SECRET>";
 const GAS_BUDGET = 5000000;
@@ -45,11 +38,11 @@ interface WalletServiceRpc {
     shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
         SignTransactionResult;
     shinami_wal_executeGaslessTransactionBlock(
-        walletId: string, 
-        sessionToken: string, 
-        txBytes: string, 
-        gasBudget: number, 
-        options?: {}, 
+        walletId: string,
+        sessionToken: string,
+        txBytes: string,
+        gasBudget: number,
+        options?: {},
         requestType?: ExecuteTransactionRequestType
     ): SuiTransactionBlockResponse;
 }
@@ -86,7 +79,7 @@ const progTxnSplitGasless = (sender:string, sourceCoinId:string) => {
     return txb;
 }
 
-// The transaction block with gas context 
+// The transaction block with gas context
 const progTxnSplit = (sender:string, sourceCoinId:string) => {
     const txb = new TransactionBlock();
 
@@ -122,7 +115,7 @@ const invisibleWalletE2E = async() => {
     const txbFull = progTxnSplit(walletAddress, sourceCoinId);
 
     // Generate the bcs serialized transaction payload
-    const payloadBytesFull = await txbFull.build({ provider: suiProvider });
+    const payloadBytesFull = await txbFull.build({ client: suiClient });
 
     // Convert the payload byte array to a base64 encoded string
     const payloadBytesFullBase64 = btoa(
@@ -133,7 +126,7 @@ const invisibleWalletE2E = async() => {
     const sig = await walletService.shinami_wal_signTransactionBlock(walletId, sessionToken, payloadBytesFullBase64);
 
     // Execute the signed transaction on the Sui blockchain
-    const executeResponseFull = await suiProvider.executeTransactionBlock(
+    const executeResponseFull = await suiClient.executeTransactionBlock(
         {
             transactionBlock: payloadBytesFullBase64,
             signature: sig.signature,
@@ -147,7 +140,7 @@ const invisibleWalletE2E = async() => {
     const txbGasless = progTxnSplitGasless(walletAddress, sourceCoinId);
 
     // Generate the bcs serialized transaction payload
-    const payloadBytesGasless = await txbGasless.build({ provider: suiProvider, onlyTransactionKind: true });
+    const payloadBytesGasless = await txbGasless.build({ client: suiClient, onlyTransactionKind: true });
 
     // Convert the payload byte array to a base64 encoded string
     const payloadBytesGaslessBase64 = btoa(
