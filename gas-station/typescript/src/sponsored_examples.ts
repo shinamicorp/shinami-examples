@@ -17,7 +17,7 @@ const SPONSOR_RPC_URL = "https://api.shinami.com/gas/v1/<GAS_ACCESS_KEY>";
 // Sui Node endpoint:
 const suiClient = new SuiClient({
   // Sui Node endpoint:
-  url: "https://node.shinami.com/api/v1/<NODE_ACCESS_KEY>",
+  url: "https://api.shinami.com/node/v1/<NODE_ACCESS_KEY>",
 });
 
 // Create the sender's address key pair from the recovery phrase
