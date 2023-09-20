@@ -20,7 +20,7 @@ const SPONSOR_RPC_URL = "https://api.shinami.com/gas/v1/<GAS_ACCESS_KEY>";
 
 // Sui Node endpoint:
 const connection = new Connection({
-    fullnode: 'https://node.shinami.com/api/v1/<NODE_ACCESS_KEY>'
+    fullnode: 'https://api.shinami.com/node/v1/<NODE_ACCESS_KEY>'
 });
 const suiProvider = new JsonRpcProvider(connection);
 
