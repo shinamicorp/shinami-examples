@@ -1,169 +1,197 @@
-import { ExecuteTransactionRequestType, SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client";
+// 1. Import everything we'll need for the rest of the tutorial
+import { 
+  WalletClient, 
+  KeyClient, 
+  createSuiClient, 
+  GasStationClient,
+  buildGaslessTransactionBytes, 
+} from "@shinami/clients";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { rpcClient } from "typed-rpc";
+import { verifyPersonalMessage } from '@mysten/sui.js/verify';
 
-// The Key Service is Shinami's secure and stateless way to get access to the Invisible Wallet
-const KEY_SERVICE_RPC_URL = "https://api.shinami.com/key/v1/";
+// 2. Copy your access key value
+const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
-// The Wallet Service is the endpoint to issue calls on behalf of the wallet.
-const WALLET_SERVICE_RPC_URL = "https://api.shinami.com/wallet/v1/";
+// // 3. Set up two wallet ids and a sercret for each
+const WALLET_ONE_ID = "{{walletOneId}}";
+const WALLET_ONE_SECRET = "{{walletOneSecret}}";
+const WALLET_TWO_ID = "{{walletTwoId}}";
+const WALLET_TWO_SECRET = "{{walletTwoSecret}}";
 
-const suiClient = new SuiClient({
-    // Shinami Sui Node endpoint + Mysten provided faucet endpoint:
-    url: 'https://api.shinami.com/node/v1/<API_ACCESS_KEY>'
-});
-const walletId = "<WALLET_ID>";
-const secret = "<SECRET>";
-const GAS_BUDGET = 5000000;
+// 4. Instantiate your Shinami clients
+const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
-// You can send testnet Sui to your wallet address via the Sui Discord testnet faucet
-const sourceCoinId = "<COIN_ID>";
+// 5. Set up some variables we'll use in the examples below
+let sessionToken = "";
+let senderAddress = "";
+let senderSignature = null;
 
-// Key Service interaction setup
-interface KeyServiceRpc {
-    shinami_key_createSession(secret: string): string;
+// 6. Create the first wallet by generating a session token using its assocated secret
+sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
+const WALLET_ONE_SUI_ADDRESS = await walletClient.createWallet(WALLET_ONE_ID, sessionToken);
+console.log(WALLET_ONE_SUI_ADDRESS);
+
+// 7. Create the second wallet by  generating a session token using its assocated secret
+sessionToken = await keyClient.createSession(WALLET_TWO_SECRET);
+const WALLET_TWO_SUI_ADDRESS = await walletClient.createWallet(WALLET_TWO_ID, sessionToken)
+console.log(WALLET_TWO_SUI_ADDRESS);
+
+
+// 8. Generate the TransactionKind for sponsorship as a Base64 encoded string
+let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
+sui: nodeClient,
+build: async (txb) => {
+  txb.moveCall({
+    target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
+    arguments: [txb.object('0x6')]
+  });
 }
-const keyService = rpcClient<KeyServiceRpc>(KEY_SERVICE_RPC_URL, {
-    getHeaders() {
-        return {
-            "X-API-Key": "<API_ACCESS_KEY>"
-        };
-    },
-});
-
-// Wallet Service interaction setup
-interface WalletServiceRpc {
-    shinami_wal_createWallet(walletId: string, sessionToken: string): string;
-    shinami_wal_getWallet(walletId: string): string;
-    shinami_wal_signTransactionBlock(walletId: string, sessionToken: string, txBytes: string):
-        SignTransactionResult;
-    shinami_wal_executeGaslessTransactionBlock(
-        walletId: string,
-        sessionToken: string,
-        txBytes: string,
-        gasBudget: number,
-        options?: {},
-        requestType?: ExecuteTransactionRequestType
-    ): SuiTransactionBlockResponse;
-}
-
-interface SignTransactionResult {
-    signature: string;
-    txDigest: string;
-}
-
-const walletService = rpcClient<WalletServiceRpc>(WALLET_SERVICE_RPC_URL, {
-    getHeaders() {
-        return {
-            "X-API-Key": "<API_ACCESS_KEY>"
-        };
-    },
 });
 
-// Create a programmable transaction block to split off two new coins of value 10,000 and 20,000 MIST.
+// 9. Set your gas budget for sponsorship
+const GAS_BUDGET = 5_000_000;
 
-// The transaction block without gas context
-const progTxnSplitGasless = (sender:string, sourceCoinId:string) => {
-    const txb = new TransactionBlock();
+// 10. We need to generate a new session token since the
+//     previous value was associated with wallet two.
+sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
 
-    // Split two new coins out of sourceCoinId, one with 10000 balance, and the other with 20000
-    const [coin1, coin2] = txb.splitCoins(
-        txb.object(sourceCoinId),
-        [txb.pure(10000), txb.pure(20000)]
-    );
-    // Each new object created in a transaction must have an owner
-    txb.transferObjects(
-        [coin1, coin2],
-        txb.pure(sender)
-    );
-    return txb;
-}
+// 11. Sponsor, sign, and execute in one call!
+const sponsorSignAndExecuteResponse = await walletClient.executeGaslessTransactionBlock(
+WALLET_ONE_ID,
+sessionToken,
+gaslessPayloadBase64,
+GAS_BUDGET,
+{ showEffects: true },
+"WaitForLocalExecution"
+);
 
-// The transaction block with gas context
-const progTxnSplit = (sender:string, sourceCoinId:string) => {
-    const txb = new TransactionBlock();
+// You can look up the digest in Sui Explorer - make sure to switch to Testnet
+console.log(sponsorSignAndExecuteResponse.digest);
 
-    // Split two new coins out of sourceCoinId, one with 10000 balance, and the other with 20000
-    const [coin1, coin2] = txb.splitCoins(
-        txb.object(sourceCoinId),
-        [txb.pure(10000), txb.pure(20000)]
-    );
-    // Each new object created in a transaction must have an owner
-    txb.transferObjects(
-        [coin1, coin2],
-        txb.pure(sender)
-    );
-    txb.setSender(sender);
-    txb.setGasBudget(GAS_BUDGET);
-    txb.setGasOwner(sender);
-    return txb;
-}
+// If you forget a wallet address, you can look it up with wallet service:
+senderAddress = await walletClient.getWallet(WALLET_ONE_ID);
+console.log(senderAddress);
 
-const invisibleWalletE2E = async() => {
-    // Create an ephemeral session token to access Invisible Wallet functionality
-    const sessionToken = await keyService.shinami_key_createSession(secret);
 
-    // Create a new wallet (can only be done once with the same walletId). Make
-    // sure to transfer Sui coins to your wallet before trying to run the
-    // following transactions
-    const createdWalletAddress = await walletService.shinami_wal_createWallet(walletId, sessionToken);
 
-    // Retrieve the wallet address via the walletId. Should be the same as createdWalletAddress
-    const walletAddress = await walletService.shinami_wal_getWallet(walletId);
+// -- Sponsor, sign, and execute a transaction in three calls -- //
 
-    // Get the transaction block of the full transaction.
-    const txbFull = progTxnSplit(walletAddress, sourceCoinId);
+const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY); 
 
-    // Generate the bcs serialized transaction payload
-    const payloadBytesFull = await txbFull.build({ client: suiClient });
+// Use getWallet to get the Sui address of a previously-created invisible wallet
+senderAddress = await walletClient.getWallet(WALLET_TWO_ID);
 
-    // Convert the payload byte array to a base64 encoded string
-    const payloadBytesFullBase64 = btoa(
-        payloadBytesFull.reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
+// Sponsor the transaction with a call to Gas Station
+const sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
+  gaslessPayloadBase64,
+  senderAddress,
+  GAS_BUDGET
+);
 
-    // Sign the payload via the Shinami Wallet Service.
-    const sig = await walletService.shinami_wal_signTransactionBlock(walletId, sessionToken, payloadBytesFullBase64);
+// Generate a new session token with wallet 2's secret
+sessionToken = await keyClient.createSession(WALLET_TWO_SECRET);
 
-    // Execute the signed transaction on the Sui blockchain
-    const executeResponseFull = await suiClient.executeTransactionBlock(
-        {
-            transactionBlock: payloadBytesFullBase64,
-            signature: sig.signature,
-            options: {showEffects: true},
-            requestType: "WaitForLocalExecution"
-        }
-    );
-    console.log("Execution Status:", executeResponseFull.effects?.status.status);
+// Sign the transaction with wallet 2 as the sender
+senderSignature = await walletClient.signTransactionBlock(
+  WALLET_TWO_ID,
+  sessionToken,
+  sponsoredResponse.txBytes
+);
 
-    // Get the transaction block of the gasless transaction
-    const txbGasless = progTxnSplitGasless(walletAddress, sourceCoinId);
+// Use the TransactionBlock and sponsor signature produced by 
+//  `sponsorTransactionBlock` along with the sender's signature we 
+//  just obtained to execute the transaction.
+let executeSponsoredTxResponse = await nodeClient.executeTransactionBlock({
+  transactionBlock: sponsoredResponse.txBytes,
+  signature: [senderSignature.signature, sponsoredResponse.signature],
+  options: { showEffects: true },
+  requestType: "WaitForLocalExecution",
+});
 
-    // Generate the bcs serialized transaction payload
-    const payloadBytesGasless = await txbGasless.build({ client: suiClient, onlyTransactionKind: true });
+console.log(executeSponsoredTxResponse);
 
-    // Convert the payload byte array to a base64 encoded string
-    const payloadBytesGaslessBase64 = btoa(
-        payloadBytesGasless.reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
 
-    // Sponsor and execute the transaction with one call
-    const executeResponseGasless = await walletService.shinami_wal_executeGaslessTransactionBlock(
-        walletId,
-        sessionToken,
-        payloadBytesGaslessBase64,
-        GAS_BUDGET,
-        {
-            showInput: false,
-            showRawInput: false,
-            showEffects: true,
-            showEvents: false,
-            showObjectChanges: false,
-            showBalanceChanges: false
-        },
-        "WaitForLocalExecution"
-    );
-    console.log("Execution Status:", executeResponseGasless.effects?.status.status);
-}
+// -- Sign and execute a non-sponsored transaction -- //
 
-invisibleWalletE2E();
+// You can send Testnet Sui to your wallet address 
+//  via the Sui Discord Testnet faucet
+
+sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
+senderAddress = await walletClient.getWallet(WALLET_ONE_ID);
+
+// Set this to the id of a Sui coin owned by the sender address
+const COIN_TO_SPLIT = "{{coinToSplitObjectId}}";
+
+// Create  new TransactionBlock and add the operations to create
+//  two new coins from MIST contained by the COIN_TO_SPLIT
+const txb = new TransactionBlock();
+const [coin1, coin2] = txb.splitCoins(txb.object(COIN_TO_SPLIT), [
+  txb.pure(10000),
+  txb.pure(20000),
+]);
+  // Each new object created in a transaction must be sent to an owner
+txb.transferObjects([coin1, coin2], txb.pure(senderAddress));
+  // Set gas context and sender
+txb.setSender(senderAddress);
+txb.setGasBudget(GAS_BUDGET);
+txb.setGasOwner(senderAddress);
+
+
+// Generate the bcs serialized transaction data without any gas object data
+const txBytes = await txb.build({ client: nodeClient, onlyTransactionKind: false});
+
+// Convert the byte array to a base64 encoded string
+const txBytesBase64 = btoa(
+  txBytes
+      .reduce((data, byte) => data + String.fromCharCode(byte), '')
+);
+
+// Obtain the sender's signature
+senderSignature = await walletClient.signTransactionBlock(
+  WALLET_ONE_ID,
+  sessionToken,
+  txBytesBase64
+);
+// Execute the transaction 
+const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
+  transactionBlock: txBytesBase64,
+  signature: [senderSignature.signature],
+  options: { showEffects: true },
+  requestType: "WaitForLocalExecution",
+});
+
+console.log(executeNonSponsoredTxResponse);
+
+
+
+//  -- Sign a personal message from an invisible wallet and then verify the signer -- //
+
+sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
+
+// Encode the as a base64 string
+let message = "I have the private keys."; 
+let messageAsBase64String = btoa(message);
+
+// Use Shinami Wallet Service to sign the message
+let signature = await walletClient.signPersonalMessage(
+WALLET_ONE_ID,
+sessionToken,
+messageAsBase64String,
+true // Defaults to true when using our SDK if not provided. Needs to 
+     // be true to work with the verifyPersonalMessage method below
+);
+
+// When we check the signature, we encode the message as a byte array
+// and not a base64 string like when we signed it
+let messageBytes = new TextEncoder().encode(message); 
+
+// Failure throws a `Signature is not valid for the provided message` Error
+let publicKey = await verifyPersonalMessage(messageBytes, signature);
+
+// Get the wallet address we signed with so we can check against it
+let walletAddress = await walletClient.getWallet(WALLET_ONE_ID);
+
+console.log(walletAddress == publicKey.toSuiAddress());
+// true
