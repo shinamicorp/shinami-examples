@@ -5,6 +5,7 @@ import {
   createSuiClient, 
   GasStationClient,
   buildGaslessTransactionBytes, 
+  ShinamiWalletSigner
 } from "@shinami/clients";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { verifyPersonalMessage } from '@mysten/sui.js/verify';
@@ -12,32 +13,32 @@ import { verifyPersonalMessage } from '@mysten/sui.js/verify';
 // 2. Copy your access key value
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
-// // 3. Set up two wallet ids and a sercret for each
+// 3. Set up a wallet id and an associated sercret
 const WALLET_ONE_ID = "{{walletOneId}}";
 const WALLET_ONE_SECRET = "{{walletOneSecret}}";
-const WALLET_TWO_ID = "{{walletTwoId}}";
-const WALLET_TWO_SECRET = "{{walletTwoSecret}}";
+
 
 // 4. Instantiate your Shinami clients
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
-// 5. Set up some variables we'll use in the examples below
-let sessionToken = "";
-let senderAddress = "";
+// 5. Set up a variable we'll use in the examples below
 let senderSignature = null;
 
-// 6. Create the first wallet by generating a session token using its assocated secret
-sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
-const WALLET_ONE_SUI_ADDRESS = await walletClient.createWallet(WALLET_ONE_ID, sessionToken);
-console.log(WALLET_ONE_SUI_ADDRESS);
+// 6. Generate a signer for our invisible wallet and try to create it
+const signer = new ShinamiWalletSigner(
+  WALLET_ONE_ID,
+  walletClient,
+  WALLET_ONE_SECRET,
+  keyClient
+);
+// Returns the Sui address if it creates a wallet, otherwise undefined if the wallet exists
+let addressOrUndefined = await signer.tryCreate();
 
-// 7. Create the second wallet by  generating a session token using its assocated secret
-sessionToken = await keyClient.createSession(WALLET_TWO_SECRET);
-const WALLET_TWO_SUI_ADDRESS = await walletClient.createWallet(WALLET_TWO_ID, sessionToken)
-console.log(WALLET_TWO_SUI_ADDRESS);
-
+// 7. If undefined, we can look up the  address with the `gatAddress` method
+const WALLET_ONE_SUI_ADDRESS = addressOrUndefined ? addressOrUndefined : await signer.getAddress();
+console.log("Invisible wallet Sui address:", WALLET_ONE_SUI_ADDRESS);
 
 // 8. Generate the TransactionKind for sponsorship as a Base64 encoded string
 let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
@@ -53,73 +54,53 @@ build: async (txb) => {
 // 9. Set your gas budget for sponsorship
 const GAS_BUDGET = 5_000_000;
 
-// 10. We need to generate a new session token since the
-//     previous value was associated with wallet two.
-sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
-
-// 11. Sponsor, sign, and execute in one call!
-const sponsorSignAndExecuteResponse = await walletClient.executeGaslessTransactionBlock(
-WALLET_ONE_ID,
-sessionToken,
-gaslessPayloadBase64,
-GAS_BUDGET,
-{ showEffects: true },
-"WaitForLocalExecution"
-);
+// 10. Sponsor, sign, and execute the transacion
+const sponsorSignAndExecuteResponse = await signer.executeGaslessTransactionBlock(
+  gaslessPayloadBase64,
+  GAS_BUDGET,
+  { showEffects: true },
+  "WaitForLocalExecution"
+)
 
 // You can look up the digest in Sui Explorer - make sure to switch to Testnet
-console.log(sponsorSignAndExecuteResponse.digest);
+console.log("sponsorSignAndExecuteResponse.digest:", sponsorSignAndExecuteResponse.digest);
 
-// If you forget a wallet address, you can look it up with wallet service:
-senderAddress = await walletClient.getWallet(WALLET_ONE_ID);
-console.log(senderAddress);
 
 
 
 // -- Sponsor, sign, and execute a transaction in three calls -- //
 
+// Sponsor the above transaction with a call to Gas Station
 const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY); 
-
-// Use getWallet to get the Sui address of a previously-created invisible wallet
-senderAddress = await walletClient.getWallet(WALLET_TWO_ID);
-
-// Sponsor the transaction with a call to Gas Station
 const sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
   gaslessPayloadBase64,
-  senderAddress,
+  WALLET_ONE_SUI_ADDRESS,
   GAS_BUDGET
 );
 
-// Generate a new session token with wallet 2's secret
-sessionToken = await keyClient.createSession(WALLET_TWO_SECRET);
-
-// Sign the transaction with wallet 2 as the sender
-senderSignature = await walletClient.signTransactionBlock(
-  WALLET_TWO_ID,
-  sessionToken,
+// Sign the transaction (the Invisible Wallet is the sender)
+senderSignature = await signer.signTransactionBlock(
   sponsoredResponse.txBytes
 );
 
 // Use the TransactionBlock and sponsor signature produced by 
 //  `sponsorTransactionBlock` along with the sender's signature we 
 //  just obtained to execute the transaction.
-let executeSponsoredTxResponse = await nodeClient.executeTransactionBlock({
+const executeSponsoredTxResponse = await nodeClient.executeTransactionBlock({
   transactionBlock: sponsoredResponse.txBytes,
   signature: [senderSignature.signature, sponsoredResponse.signature],
   options: { showEffects: true },
   requestType: "WaitForLocalExecution",
 });
 
-console.log(executeSponsoredTxResponse);
+console.log("executeSponsoredTxResponse.digest: ", executeSponsoredTxResponse.digest);
+
 
 
 // -- Sign and execute a non-sponsored transaction -- //
 
 // You can send Testnet Sui to your wallet address 
 //  via the Sui Discord Testnet faucet
-
-sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
-senderAddress = await walletClient.getWallet(WALLET_ONE_ID);
 
 // Set this to the id of a Sui coin owned by the sender address
 const COIN_TO_SPLIT = "{{coinToSplitObjectId}}";
@@ -132,11 +113,11 @@ const [coin1, coin2] = txb.splitCoins(txb.object(COIN_TO_SPLIT), [
   txb.pure(20000),
 ]);
   // Each new object created in a transaction must be sent to an owner
-txb.transferObjects([coin1, coin2], txb.pure(senderAddress));
+txb.transferObjects([coin1, coin2], txb.pure(WALLET_ONE_SUI_ADDRESS));
   // Set gas context and sender
-txb.setSender(senderAddress);
+txb.setSender(WALLET_ONE_SUI_ADDRESS);
 txb.setGasBudget(GAS_BUDGET);
-txb.setGasOwner(senderAddress);
+txb.setGasOwner(WALLET_ONE_SUI_ADDRESS);
 
 
 // Generate the bcs serialized transaction data without any gas object data
@@ -148,12 +129,11 @@ const txBytesBase64 = btoa(
       .reduce((data, byte) => data + String.fromCharCode(byte), '')
 );
 
-// Obtain the sender's signature
-senderSignature = await walletClient.signTransactionBlock(
-  WALLET_ONE_ID,
-  sessionToken,
+// Sign the transaction (the Invisible Wallet is the sender)
+senderSignature = await signer.signTransactionBlock(
   txBytesBase64
 );
+
 // Execute the transaction 
 const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
   transactionBlock: txBytesBase64,
@@ -162,25 +142,20 @@ const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
   requestType: "WaitForLocalExecution",
 });
 
-console.log(executeNonSponsoredTxResponse);
+console.log("executeNonSponsoredTxResponse.digest:", executeNonSponsoredTxResponse.digest);
+
 
 
 
 //  -- Sign a personal message from an invisible wallet and then verify the signer -- //
 
-sessionToken = await keyClient.createSession(WALLET_ONE_SECRET);
-
 // Encode the as a base64 string
 let message = "I have the private keys."; 
 let messageAsBase64String = btoa(message);
 
-// Use Shinami Wallet Service to sign the message
-let signature = await walletClient.signPersonalMessage(
-WALLET_ONE_ID,
-sessionToken,
-messageAsBase64String,
-true // Defaults to true when using our SDK if not provided. Needs to 
-     // be true to work with the verifyPersonalMessage method below
+// Sign the message with the Invisible Wallet
+let signature = await signer.signPersonalMessage(
+  messageAsBase64String
 );
 
 // When we check the signature, we encode the message as a byte array
@@ -190,8 +165,6 @@ let messageBytes = new TextEncoder().encode(message);
 // Failure throws a `Signature is not valid for the provided message` Error
 let publicKey = await verifyPersonalMessage(messageBytes, signature);
 
-// Get the wallet address we signed with so we can check against it
-let walletAddress = await walletClient.getWallet(WALLET_ONE_ID);
-
-console.log(walletAddress == publicKey.toSuiAddress());
+// Check that the signer's address matches the Invisible wallet's address
+console.log("Personal message signer address matches Invisible Wallet address:", WALLET_ONE_SUI_ADDRESS == publicKey.toSuiAddress());
 // true
