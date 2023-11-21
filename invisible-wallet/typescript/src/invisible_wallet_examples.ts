@@ -33,12 +33,12 @@ const signer = new ShinamiWalletSigner(
   WALLET_ONE_SECRET,
   keyClient
 );
-// Returns the Sui address if it creates a wallet, otherwise undefined if the wallet exists
-let addressOrUndefined = await signer.tryCreate();
 
-// 7. If undefined, we can look up the  address with the `gatAddress` method
-const WALLET_ONE_SUI_ADDRESS = addressOrUndefined ? addressOrUndefined : await signer.getAddress();
+// 7. Returns the Sui address of the invisible wallet, 
+//     creating it if it hasn't been created yet
+let WALLET_ONE_SUI_ADDRESS = await signer.getAddress(true);
 console.log("Invisible wallet Sui address:", WALLET_ONE_SUI_ADDRESS);
+
 
 // 8. Generate the TransactionKind for sponsorship as a Base64 encoded string
 let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
@@ -102,49 +102,55 @@ console.log("executeSponsoredTxResponse.digest: ", executeSponsoredTxResponse.di
 // You can send Testnet Sui to your wallet address 
 //  via the Sui Discord Testnet faucet
 
-// Set this to the id of a Sui coin owned by the sender address
-const COIN_TO_SPLIT = "{{coinToSplitObjectId}}";
+// 
+//  Un-comment the below section and set the object id of COIN_TO_SPLIT
+// 
 
-// Create  new TransactionBlock and add the operations to create
-//  two new coins from MIST contained by the COIN_TO_SPLIT
-const txb = new TransactionBlock();
-const [coin1, coin2] = txb.splitCoins(txb.object(COIN_TO_SPLIT), [
-  txb.pure(10000),
-  txb.pure(20000),
-]);
-  // Each new object created in a transaction must be sent to an owner
-txb.transferObjects([coin1, coin2], txb.pure(WALLET_ONE_SUI_ADDRESS));
-  // Set gas context and sender
-txb.setSender(WALLET_ONE_SUI_ADDRESS);
-txb.setGasBudget(GAS_BUDGET);
-txb.setGasOwner(WALLET_ONE_SUI_ADDRESS);
+// // Set this to the id of a Sui coin owned by the sender address
+// const COIN_TO_SPLIT = "{{coinToSplitObjectId}}";
 
-
-// Generate the bcs serialized transaction data without any gas object data
-const txBytes = await txb.build({ client: nodeClient, onlyTransactionKind: false});
-
-// Convert the byte array to a base64 encoded string
-const txBytesBase64 = btoa(
-  txBytes
-      .reduce((data, byte) => data + String.fromCharCode(byte), '')
-);
-
-// Sign the transaction (the Invisible Wallet is the sender)
-senderSignature = await signer.signTransactionBlock(
-  txBytesBase64
-);
-
-// Execute the transaction 
-const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
-  transactionBlock: txBytesBase64,
-  signature: [senderSignature.signature],
-  options: { showEffects: true },
-  requestType: "WaitForLocalExecution",
-});
-
-console.log("executeNonSponsoredTxResponse.digest:", executeNonSponsoredTxResponse.digest);
+// // Create  new TransactionBlock and add the operations to create
+// //  two new coins from MIST contained by the COIN_TO_SPLIT
+// const txb = new TransactionBlock();
+// const [coin1, coin2] = txb.splitCoins(txb.object(COIN_TO_SPLIT), [
+//   txb.pure(10000),
+//   txb.pure(20000),
+// ]);
+//   // Each new object created in a transaction must be sent to an owner
+// txb.transferObjects([coin1, coin2], txb.pure(WALLET_ONE_SUI_ADDRESS));
+//   // Set gas context and sender
+// txb.setSender(WALLET_ONE_SUI_ADDRESS);
+// txb.setGasBudget(GAS_BUDGET);
+// txb.setGasOwner(WALLET_ONE_SUI_ADDRESS);
 
 
+// // Generate the bcs serialized transaction data without any gas object data
+// const txBytes = await txb.build({ client: nodeClient, onlyTransactionKind: false});
+
+// // Convert the byte array to a base64 encoded string
+// const txBytesBase64 = btoa(
+//   txBytes
+//       .reduce((data, byte) => data + String.fromCharCode(byte), '')
+// );
+
+// // Sign the transaction (the Invisible Wallet is the sender)
+// senderSignature = await signer.signTransactionBlock(
+//   txBytesBase64
+// );
+
+// // Execute the transaction 
+// const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
+//   transactionBlock: txBytesBase64,
+//   signature: [senderSignature.signature],
+//   options: { showEffects: true },
+//   requestType: "WaitForLocalExecution",
+// });
+
+// console.log("executeNonSponsoredTxResponse.digest:", executeNonSponsoredTxResponse.digest);
+
+//
+// End section to uncomment
+//
 
 
 //  -- Sign a personal message from an invisible wallet and then verify the signer -- //
