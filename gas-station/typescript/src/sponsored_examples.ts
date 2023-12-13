@@ -1,19 +1,20 @@
+// 1. Import everything we'll need for the rest of the tutorial
 import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { GasStationClient, createSuiClient, buildGaslessTransactionBytes } from "@shinami/clients";
 
-// 1. Copy your testnet Gas Station and Node Service key values
+// 2. Copy your testnet Gas Station and Node Service key values
 const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
 
-// 2. Set up your Gas Station and Node Service clients
+// 3. Set up your Gas Station and Node Service clients
 const nodeClient = createSuiClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
 const gasStationClient = new GasStationClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
 
-// 3. Generate a new KeyPair to represent the sender
+// 4. Generate a new KeyPair to represent the sender
 let keyPair = new Ed25519Keypair();
 const SENDER_ADDRESS = keyPair.toSuiAddress();
 
-// 4. Generate the TransactionKind for sponsorship as a Base64 encoded string
+// 5. Generate the TransactionKind for sponsorship as a Base64 encoded string
 let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
   sui: nodeClient,
   build: async (txb) => {
@@ -24,14 +25,11 @@ let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
   }
 });
 
-// 5. Set your gas budget, in MIST
-const GAS_BUDGET = 5_000_000;
-
 // 6. Send the TransactionKind to Shinami Gas Station for sponsorship
+//     We are omitting the gasBudget parameter to take advantage of auto-budgeting.
 let sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
   gaslessPayloadBase64,
-  SENDER_ADDRESS,
-  GAS_BUDGET
+  SENDER_ADDRESS
 );
 
 // 7. The transaction should be sponsored now, so its status will be "IN_FLIGHT"
@@ -121,7 +119,7 @@ console.log("Execution Status:", executeResponse.effects?.status.status);
 
 
 // -- A different way to generate gasless transaction bytes as a base64 encoded string -- //
-// Replace step 4 above with:
+// Replace step 5 above with all the following lines of code:
 // const txb = new TransactionBlock();
 // txb.moveCall({
 //   target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",

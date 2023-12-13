@@ -3,8 +3,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@mysten/sui.js": "^0.46.1",
-    "@shinami/clients": "^0.7.0",
+    "@mysten/sui.js": "^0.48.1",
+    "@shinami/clients": "^0.7.2",
     "@types/node": "^20.9.0",
     "typed-rpc": "^3.0.0"
   },

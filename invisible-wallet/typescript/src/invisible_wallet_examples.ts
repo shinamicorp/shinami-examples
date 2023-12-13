@@ -51,13 +51,12 @@ build: async (txb) => {
 }
 });
 
-// 9. Set your gas budget for sponsorship
-const GAS_BUDGET = 5_000_000;
 
-// 10. Sponsor, sign, and execute the transacion
+// 9. Sponsor, sign, and execute the transaction
+//    We are omitting the gasBudget parameter to take advantage of auto-budgeting.
 const sponsorSignAndExecuteResponse = await signer.executeGaslessTransactionBlock(
   gaslessPayloadBase64,
-  GAS_BUDGET,
+  undefined,
   { showEffects: true },
   "WaitForLocalExecution"
 )
@@ -74,8 +73,7 @@ console.log("sponsorSignAndExecuteResponse.digest:", sponsorSignAndExecuteRespon
 const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY); 
 const sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
   gaslessPayloadBase64,
-  WALLET_ONE_SUI_ADDRESS,
-  GAS_BUDGET
+  WALLET_ONE_SUI_ADDRESS
 );
 
 // Sign the transaction (the Invisible Wallet is the sender)
