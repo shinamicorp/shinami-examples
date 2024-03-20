@@ -3,7 +3,7 @@ import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { GasStationClient, createSuiClient, buildGaslessTransactionBytes } from "@shinami/clients";
 
-// 2. Copy your testnet Gas Station and Node Service key values
+// 2. Copy your Testnet Gas Station and Node Service key value
 const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
 
 // 3. Set up your Gas Station and Node Service clients
@@ -25,14 +25,15 @@ let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
   }
 });
 
-// 6. Send the TransactionKind to Shinami Gas Station for sponsorship
+// 6. Send the TransactionKind to Shinami Gas Station for sponsorship.
 //     We are omitting the gasBudget parameter to take advantage of auto-budgeting.
 let sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
   gaslessPayloadBase64,
   SENDER_ADDRESS
 );
 
-// 7. The transaction should be sponsored now, so its status will be "IN_FLIGHT"
+// 7. The transaction should be sponsored as long as there was SUI 
+//     in your fund, so its status will be "IN_FLIGHT"
 let sponsoredStatus = await gasStationClient.getSponsoredTransactionBlockStatus(
   sponsoredResponse.txDigest
 );
@@ -40,11 +41,7 @@ console.log("Transaction Digest:", sponsoredResponse.txDigest);
 console.log("Sponsorship Status:", sponsoredStatus);
 
 // 8. Sign the full transaction payload with the sender's key.
-let senderSig = await TransactionBlock.from(sponsoredResponse.txBytes).sign(
-  {
-    signer: keyPair,
-  }
-);
+let senderSig = await TransactionBlock.from(sponsoredResponse.txBytes).sign({ signer: keyPair });
 
 // 9. Send the full transaction payload, along with the gas owner 
 //     and sender's signatures for execution on the Sui network
@@ -57,6 +54,42 @@ let executeResponse = await nodeClient.executeTransactionBlock({
 
 console.log("Transaction Digest:", executeResponse.digest);
 console.log("Execution Status:", executeResponse.effects?.status.status);
+
+
+
+// -- Check a fund's balance and deposit more SUI in the fund if it's low -- //
+
+// let suiCoin = "{{coinObjectId}}";
+// let coinsToDeposit = [suiCoin];
+// const SUI_COIN_OWNER_ADDRESS = "{{address}}";
+// const MIN_BUDGET_MIST = 100_000_000_000;
+
+// let { balance, depositAddress }  = await gasStationClient.getFund();
+
+// // Deposit address can be null - see our FAQ for how to generate an address
+// if (depositAddress && balance < MIN_BUDGET_MIST) {
+//     let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
+//       sui: nodeClient,
+//       build: async (txb) => {
+//         txb.transferObjects(
+//           coinsToDeposit,
+//           txb.pure(depositAddress)
+//         );
+//       }
+//     });
+
+//     let sponsoredResponse = await gasStationClient.sponsorTransactionBlock(
+//       gaslessPayloadBase64,
+//       SUI_COIN_OWNER_ADDRESS
+//     );
+
+//     console.log("getting ready to deposit to", depositAddress);
+
+//     // Finally, you would:
+//     //   1. Get the signature from the SUI_COIN_OWNER_ADDRESS, who is the sender 
+//     //   2. Execute the transaction like above
+
+//   }
 
 
 
@@ -81,7 +114,6 @@ console.log("Execution Status:", executeResponse.effects?.status.status);
 // });
 
 
-
 //  Transfer one or more object(s) owned by the sender address to the recipient
 //    An easy example is a small coin you created with the above transaction.
 //
@@ -97,7 +129,6 @@ console.log("Execution Status:", executeResponse.effects?.status.status);
 //     );
 //   }
 // });
-
 
 
 //  Merge one or more smaller coins into another, destroying the small coin(s)
@@ -118,39 +149,17 @@ console.log("Execution Status:", executeResponse.effects?.status.status);
 // });
 
 
-// -- A different way to generate gasless transaction bytes as a base64 encoded string -- //
-// Replace step 5 above with all the following lines of code:
-// const txb = new TransactionBlock();
-// txb.moveCall({
-//   target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
-//   arguments: [txb.object('0x6')]
-// });
-
-//  generate the bcs serialized transaction data without any gas object data
-// const gaslessPayloadBytes = await txb.build({ client: nodeClient, onlyTransactionKind: true});
-
-//  convert the byte array to a base64 encoded string
-// const gaslessPayloadBase64 = btoa(
-//     gaslessPayloadBytes
-//         .reduce((data, byte) => data + String.fromCharCode(byte), '')
-// );
-
-
 
 // -- Generate a KeyPair from a private key or passphrase -- //
 
-//   Create the sender's address KeyPair from the sender's private key
-//
-//
+// // Create the sender's KeyPair from the private key
 // const SENDER_PRIVATE_KEY = "{{privateKey}}";
 // const buf = Buffer.from(SENDER_PRIVATE_KEY, "base64");
 // const keyPairFromSecretKey = Ed25519Keypair.fromSecretKey(buf.slice(1));
 // console.log(keyPairFromSecretKey.toSuiAddress());
 
 
-//   Create the sender's address KeyPair from the sender's recovery phrase
-//
-//
+// // Create the sender's KeyPair from the recovery phrase
 // const SENDER_PASSPHRASE = "{{passphrase}}";
 // const keyPairFromPassphrase = Ed25519Keypair.deriveKeypair(SENDER_PASSPHRASE);
 // console.log(keyPairFromPassphrase.toSuiAddress());
