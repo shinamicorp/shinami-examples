@@ -1,12 +1,11 @@
 {
   "devDependencies": {
-    "typescript": "^5.2.2"
+    "typescript": "^5.4.2"
   },
   "dependencies": {
-    "@mysten/sui.js": "^0.48.1",
-    "@shinami/clients": "^0.7.2",
-    "@types/node": "^20.9.0",
-    "typed-rpc": "^3.0.0"
+    "@mysten/sui.js": "^0.51.0",
+    "@shinami/clients": "^0.7.3",
+    "@types/node": "^20.11.1"
   },
   "type": "module"
 }
