@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@mysten/sui.js": "^0.54.1",
+    "@shinami/clients": "^0.7.3"
+  },
+  "type": "module"
+}
