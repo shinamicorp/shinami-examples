@@ -108,3 +108,7 @@ dist
 
 # Mac os Finder metadata file
 .DS_Store
+
+# Node build output
+sui/typescript/build
+aptos/typescript/build

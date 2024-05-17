@@ -100,37 +100,19 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
 //
 //
 let { balance, depositAddress }  = await gasStationClient.getFund();
-const MIN_BUDGET_MIST = 50_000_000_000; // 50 SUI
+const MIN_FUND_BALANCE_MIST = 50_000_000_000; // 50 SUI
 // Deposit address can be null - see our FAQ for how to generate an address
-if (depositAddress && balance < MIN_BUDGET_MIST) {
+if (depositAddress && balance < MIN_FUND_BALANCE_MIST) {
     // console.log("\nGetting ready to deposit to Gas Station fund address:", depositAddress);
     // let suiCoinObjectIdToDeposit = "{{coinObjectID}}";
-    // let txDigest = await depositCoinFromOwnerToAddress(suiCoinObjectIdToDeposit, keyPairFromSecretKey, depositAddress);
+    // // We're not actually checking it's a SUI coin we're transferring, which you should do
+    // let txKindB64String = await transferObjectToRecipientTransactionKind(suiCoinObjectIdToDeposit, depositAddress);
+    // // We're sponsoring with the gas fund we're depositing to (which only work if there's a little SUI left)
+    // let txDigest = await sponsorAndExecuteTransactionForKeyPairSender(txKindB64String, keyPairFromSecretKey);
     // console.log("Transaction Digest from fund deposit:", txDigest);
 }
 
-// Deposit a SUI coin owned by the coin owner KeyPair into the 
-//  supplied address. This code doesn't actually check that it's a SUI coin -
-//  it would technically work with any object. Make sure you only transfer a SUI coin into
-//  your fund address.
-async function depositCoinFromOwnerToAddress(SUIcoinID: string, coinOwnerKeyPair: Ed25519Keypair, 
-                                              depositAddress: string): Promise<string> {
-  let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
-    sui: nodeClient,
-    build: async (txb) => {
-      txb.transferObjects(
-        [txb.object(SUIcoinID)],
-        txb.pure(depositAddress)
-      );
-    }
-  });
 
-  // You can sponsor with the gas fund you're depositing to
-  // (as long as it has a little SUI left)
-  let txDigest = await sponsorAndExecuteTransactionForKeyPairSender(
-                           gaslessPayloadBase64, coinOwnerKeyPair);
-  return txDigest;
-}
 
 //
 //
