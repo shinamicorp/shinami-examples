@@ -5,7 +5,7 @@ script {
 
     fun unfair_swap_coins(
         sender: &signer,
-        secondary: &signerls
+        secondary: &signer
     ) {
         let coin_first = coin::withdraw<aptos_coin::AptosCoin>(sender, 100);
         let coin_second = coin::withdraw<aptos_coin::AptosCoin>(secondary, 200);

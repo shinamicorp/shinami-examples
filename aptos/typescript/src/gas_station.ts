@@ -8,7 +8,8 @@ import {
     SimpleTransaction,
     MultiAgentTransaction,
     MoveString,
-    CommittedTransactionResponse
+    CommittedTransactionResponse,
+    SigningSchemeInput
 } from "@aptos-labs/ts-sdk";
 import { readFileSync } from "fs";
 import { GasStationClient } from "@shinami/clients/aptos";
@@ -20,8 +21,8 @@ const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET}));
 const SHINAMI_TESTNET_GAS_KEY = "{{APTOS_TESTNET_GAS_STATION_ACCESS_KEY}}";
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_KEY);
 
-// let executedTransaction = await buildSponsorSignAndSubmitSimpleTransaction();
-let executedTransaction = await buildSponsorSignAndSubmitMultiAgentTransaction();
+let executedTransaction = await buildSponsorSignAndSubmitSimpleTransaction();
+// let executedTransaction = await buildSponsorSignAndSubmitMultiAgentTransaction();
 console.log("\nTransaction hash:", executedTransaction.hash);
 console.log("Transaction status:", executedTransaction.vm_status);
 
@@ -31,10 +32,11 @@ console.log("Transaction status:", executedTransaction.vm_status);
 async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTransactionResponse> {
     // 1. Set up our sender.
     //    Replace function call with private key value printed to console after first run.
-    const PRIVATE_KEY = await generateSingleKeyAccountPrivateKey(); 
+    const sender = await generateSingleKeyAccountEd25519();
+    const PRIVATE_KEY = Buffer.from(sender.privateKey.toUint8Array()).toString('hex');
     console.log("\nSender's private key:", PRIVATE_KEY);
 
-    const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(PRIVATE_KEY) }); 
+    // const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(PRIVATE_KEY) }); 
     console.log("Sender address:", sender.accountAddress.toString());
     
     // 2. Build a simple transaction.
@@ -68,21 +70,18 @@ async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTr
 
 
 
-// Helper function to generate a private key for a SingleKeyAccount.
+// Helper function to generate a SingleKeyAccount.
 //  If the argument is set to true, the account will be funded.
-async function generateSingleKeyAccountPrivateKey(fund = false) : Promise<string> {
-    const account: SingleKeyAccount = SingleKeyAccount.generate();
+async function generateSingleKeyAccountEd25519(fund = false) : Promise<SingleKeyAccount> {
+    const account: SingleKeyAccount = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519});
     if (fund) {
         await aptos.fundAccount({
             accountAddress: account.accountAddress,
             amount: 100000000
         });
     }
-    
-    const privateKey = Buffer.from(account.privateKey.toUint8Array()).toString('hex');
-    return privateKey;
+    return account;
 }
-
 
 
 // Build a Move call simple transaction with a fee payer
@@ -111,21 +110,23 @@ async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<Committ
 
     // 1. Generate two funded accounts to act as sender and secondary signer
     //    Replace function call with private key value printed to console after first run
-    const PRIVATE_KEY_ONE = await generateSingleKeyAccountPrivateKey(true); 
-    console.log("\nPRIVATE_KEY_ONE value:", PRIVATE_KEY_ONE);
+    const sender = await generateSingleKeyAccountEd25519(true); 
+    const SENDER_PRIVATE_KEY = Buffer.from(sender.privateKey.toUint8Array()).toString('hex');
+    console.log("\nSENDER_PRIVATE_KEY value:", SENDER_PRIVATE_KEY);
 
-    const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(PRIVATE_KEY_ONE) }); 
+    // const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(SENDER_PRIVATE_KEY) }); 
     console.log("Multiagent transaction sender address:", sender.accountAddress.toString());
 
     // replace function call with private key value printed to console after first run
-    const PRIVATE_KEY_TWO = await generateSingleKeyAccountPrivateKey(true); 
-    console.log("\nPRIVATE_KEY_TWO value:", PRIVATE_KEY_TWO);
+    const secondarySigner = await generateSingleKeyAccountEd25519(true); 
+    const SECONDARY_SIGNER_PRIVATE_KEY = Buffer.from(secondarySigner.privateKey.toUint8Array()).toString('hex');
+    console.log("\nSECONDARY_SIGNER_PRIVATE_KEY value:", SECONDARY_SIGNER_PRIVATE_KEY);
 
-    const secondarySigner: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(PRIVATE_KEY_TWO) }); 
+    // const secondarySigner: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(SECONDARY_SIGNER_PRIVATE_KEY) }); 
     console.log("Multiagent transaction secondary signer address:", secondarySigner.accountAddress.toString());
 
     // 2. Build a multiAgent transaction
-    let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, [secondarySigner.accountAddress]);
+    let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress);
 
     // 3. Sponsor the transaction with Shinami Gas Station
     let feePayerAuthenticator = await gasStationClient.sponsorTransaction(transaction);
@@ -138,7 +139,7 @@ async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<Committ
         transaction 
     });
 
-    const secondarySignerOneAuthenticator = aptos.transaction.sign({
+    const secondarySignerAuthenticator = aptos.transaction.sign({
        signer: secondarySigner,
        transaction 
     }); 
@@ -147,7 +148,7 @@ async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<Committ
     const committedTransaction = await aptos.transaction.submit.multiAgent({
         transaction,
         senderAuthenticator,
-        additionalSignersAuthenticators: [secondarySignerOneAuthenticator],
+        additionalSignersAuthenticators: [secondarySignerAuthenticator],
         feePayerAuthenticator: feePayerAuthenticator
     });
 
@@ -163,15 +164,15 @@ async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<Committ
 
 
 // Build a multi-agent script transaction with a fee payer.
-async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondarySigners: Array<AccountAddress>, 
-    expirationSeconds: number | undefined = undefined) : Promise<MultiAgentTransaction> {
+async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondarySigner: AccountAddress, 
+    expirationSeconds?: number) : Promise<MultiAgentTransaction> {
 
     let buffer = readFileSync("./move/build/test/bytecode_scripts/unfair_swap_coins.mv");
     let bytecode = Uint8Array.from(buffer);
 
     let transaction = await aptos.transaction.build.multiAgent({
         sender: sender,
-        secondarySignerAddresses: secondarySigners,
+        secondarySignerAddresses: [secondarySigner],
         withFeePayer: true,
         data: {
             bytecode: bytecode,
