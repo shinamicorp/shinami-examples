@@ -4,7 +4,7 @@
   },
   "dependencies": {
     "@mysten/sui.js": "^0.54.1",
-    "@shinami/clients": "^0.7.3"
+    "@shinami/clients": "^0.8.0"
   },
   "type": "module"
 }

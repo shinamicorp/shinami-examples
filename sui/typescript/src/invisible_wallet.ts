@@ -6,7 +6,7 @@ import {
   GasStationClient,
   buildGaslessTransactionBytes, 
   ShinamiWalletSigner
-} from "@shinami/clients";
+} from "@shinami/clients/sui";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { verifyPersonalMessage } from '@mysten/sui.js/verify';
 
@@ -14,8 +14,8 @@ import { verifyPersonalMessage } from '@mysten/sui.js/verify';
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
 // 3. Set up a wallet id and an associated secret
-const WALLET_ONE_ID =  "{{walletOneId}}";
-const WALLET_ONE_SECRET =  "{{walletOneSecret}}";
+const WALLET_ONE_ID = "{{walletOneId}}";
+const WALLET_ONE_SECRET = "{{walletOneSecret}}";
 
 
 // 4. Instantiate your Shinami clients

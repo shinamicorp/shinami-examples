@@ -112,3 +112,6 @@ dist
 # Node build output
 sui/typescript/build
 aptos/typescript/build
+
+# Aptos Move build output
+aptos/typescript/move/build

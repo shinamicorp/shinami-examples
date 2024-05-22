@@ -1,0 +1,10 @@
+{
+    "devDependencies": {
+        "typescript": "^5.4.5"
+    },
+    "dependencies": {
+        "@aptos-labs/ts-sdk": "^1.15.0",
+        "@shinami/clients": "^0.8.0"
+    },
+    "type": "module"
+}
