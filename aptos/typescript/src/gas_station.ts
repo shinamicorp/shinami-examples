@@ -14,10 +14,10 @@ import {
 import { readFileSync } from "fs";
 import { GasStationClient } from "@shinami/clients/aptos";
 
-// Create Aptos client for building and submitting our transactions.
+// Create an Aptos client for building and submitting our transactions.
 const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET}));
 
-// Create Shinami Gas Station client for sponsoring our transactions.
+// Create a Shinami Gas Station client for sponsoring our transactions.
 const SHINAMI_TESTNET_GAS_KEY = "{{APTOS_TESTNET_GAS_STATION_ACCESS_KEY}}";
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_KEY);
 
@@ -31,13 +31,7 @@ console.log("Transaction status:", executedTransaction.vm_status);
 // Build, sponsor, sign, and execute a simple Move call transaction
 async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTransactionResponse> {
     // 1. Set up our sender.
-    //    Replace function call with private key value printed to console after first run.
     const sender = await generateSingleKeyAccountEd25519();
-    const PRIVATE_KEY = Buffer.from(sender.privateKey.toUint8Array()).toString('hex');
-    console.log("\nSender's private key:", PRIVATE_KEY);
-
-    // const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(PRIVATE_KEY) }); 
-    console.log("Sender address:", sender.accountAddress.toString());
     
     // 2. Build a simple transaction.
     let transaction = await buildSimpleMoveCallTransaction(sender.accountAddress);
@@ -70,8 +64,9 @@ async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTr
 
 
 
-// Helper function to generate a SingleKeyAccount.
+// Helper function to generate a SingleKeyAccount for easy use with this tutorial.
 //  If the argument is set to true, the account will be funded.
+//  Not meant as best practice - your app should have its own way of managing Accounts and keys.
 async function generateSingleKeyAccountEd25519(fund = false) : Promise<SingleKeyAccount> {
     const account: SingleKeyAccount = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519});
     if (fund) {
@@ -85,7 +80,7 @@ async function generateSingleKeyAccountEd25519(fund = false) : Promise<SingleKey
 
 
 // Build a Move call simple transaction with a fee payer
-async function buildSimpleMoveCallTransaction(sender: AccountAddress, expirationSeconds: number | undefined = undefined): Promise<SimpleTransaction> {
+async function buildSimpleMoveCallTransaction(sender: AccountAddress, expirationSeconds?: number): Promise<SimpleTransaction> {
 
     let transaction =  await aptos.transaction.build.simple({
         sender: sender,
@@ -109,21 +104,8 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
 async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<CommittedTransactionResponse> {
 
     // 1. Generate two funded accounts to act as sender and secondary signer
-    //    Replace function call with private key value printed to console after first run
     const sender = await generateSingleKeyAccountEd25519(true); 
-    const SENDER_PRIVATE_KEY = Buffer.from(sender.privateKey.toUint8Array()).toString('hex');
-    console.log("\nSENDER_PRIVATE_KEY value:", SENDER_PRIVATE_KEY);
-
-    // const sender: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(SENDER_PRIVATE_KEY) }); 
-    console.log("Multiagent transaction sender address:", sender.accountAddress.toString());
-
-    // replace function call with private key value printed to console after first run
     const secondarySigner = await generateSingleKeyAccountEd25519(true); 
-    const SECONDARY_SIGNER_PRIVATE_KEY = Buffer.from(secondarySigner.privateKey.toUint8Array()).toString('hex');
-    console.log("\nSECONDARY_SIGNER_PRIVATE_KEY value:", SECONDARY_SIGNER_PRIVATE_KEY);
-
-    // const secondarySigner: SingleKeyAccount = new SingleKeyAccount({ privateKey: new Ed25519PrivateKey(SECONDARY_SIGNER_PRIVATE_KEY) }); 
-    console.log("Multiagent transaction secondary signer address:", secondarySigner.accountAddress.toString());
 
     // 2. Build a multiAgent transaction
     let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress);
