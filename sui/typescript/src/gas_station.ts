@@ -6,7 +6,7 @@ import {
   GasStationClient, 
   createSuiClient, 
   buildGaslessTransactionBytes 
-} from "@shinami/clients";
+} from "@shinami/clients/sui";
 
 // Copy your Testnet Gas Station and Node Service key value
 const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
