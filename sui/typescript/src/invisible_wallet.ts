@@ -75,8 +75,8 @@ let txDigest = await signSponsorExecuteInThreeRequests(signer, gaslessPayloadBas
 //  This requires two SUI coins in the address of the signer - one to split and one for gas. 
 //   You can use the Sui discord Testnet faucet channel, the faucet in Sui Wallet, etc.
 //
-const COIN_TO_SPLIT_ID = "0x90a16e33f38ac5b160ec0ee08952409acdb1aae89269f26268d8dfbadd933f96";// "{{coinToSplitObjectId}}"; // Set this to the id of a SUI coin owned by the sender address
-let unsponsoredDigest = await signAndExecuteANonSponsoredTransaction(signer, COIN_TO_SPLIT_ID);
+// const COIN_TO_SPLIT_ID = "{{coinToSplitObjectId}}"; // Set this to the id of a SUI coin owned by the sender address
+// let unsponsoredDigest = await signAndExecuteANonSponsoredTransaction(signer, COIN_TO_SPLIT_ID);
 
 // Sign a personal message with the Invisible Wallet and verify that the wallet signed it.
 let wasSuccessful = await signAndVerifyPersonalMessage(signer);
