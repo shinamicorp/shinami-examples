@@ -23,10 +23,7 @@ const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
-// 5. Set up a variable we'll use in two examples below
-let senderSignature = null;
-
-// 6. Create a signer for the Invisible Wallet
+// 5. Create a signer for the Invisible Wallet
 const signer = new ShinamiWalletSigner(
   WALLET_ONE_ID,
   walletClient,
@@ -34,24 +31,24 @@ const signer = new ShinamiWalletSigner(
   keyClient
 );
 
-// 7. Create the wallet. This request returns the Sui address of an 
+// 6. Create the wallet. This request returns the Sui address of an 
 //     Invisible Wallet, creating it if it hasn't been created yet
 const CREATE_WALLET_IF_NOT_FOUND = true;
 const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
 console.log("Invisible wallet Sui address:", WALLET_ONE_SUI_ADDRESS);
 
-// 8. Generate the TransactionKind for sponsorship as a Base64 encoded string
-let gaslessPayloadBase64 = await buildGaslessTransactionBytes({
-sui: nodeClient,
-build: async (txb) => {
-  txb.moveCall({
-    target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
-    arguments: [txb.object('0x6')]
-  });
-}
+// 7. Generate the TransactionKind for sponsorship as a Base64 encoded string
+const gaslessPayloadBase64 = await buildGaslessTransactionBytes({
+  sui: nodeClient,
+  build: async (txb) => {
+    txb.moveCall({
+      target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
+      arguments: [txb.object('0x6')]
+    });
+  }
 });
 
-// 9. Sponsor, sign, and execute the transaction
+// 8. Sponsor, sign, and execute the transaction
 //    We are omitting the gasBudget parameter to take advantage of auto-budgeting.
 const sponsorSignAndExecuteResponse = await signer.executeGaslessTransactionBlock(
   gaslessPayloadBase64,
@@ -102,7 +99,7 @@ async function signSponsorExecuteInThreeRequests(signer: ShinamiWalletSigner, tr
   );
 
   // 2. Sign the transaction (the Invisible Wallet is the sender)
-  senderSignature = await signer.signTransactionBlock(
+  const senderSignature = await signer.signTransactionBlock(
     sponsoredResponse.txBytes
   );
 
@@ -154,7 +151,7 @@ async function signAndExecuteANonSponsoredTransaction(signer: ShinamiWalletSigne
   );
 
   // 4. Sign the transaction (the Invisible Wallet is the sender)
-  senderSignature = await signer.signTransactionBlock(
+  const senderSignature = await signer.signTransactionBlock(
     txBytesBase64
   );
 
