@@ -37,11 +37,10 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
-gas-station/typescript/build/*
-invisible-wallet/typescript/build/*
-
 # Dependency directories
-node_modules/
+aptos/typescript/node_modules
+sui/typescript/backend_examples/node_modules
+sui/typescript/dapp_kit_example/node_modules
 jspm_packages/
 
 # TypeScript v1 declaration files
@@ -110,8 +109,8 @@ dist
 .DS_Store
 
 # Node build output
-sui/typescript/build
-aptos/typescript/build
+sui/typescript/backend_examples/build/*
+aptos/typescript/build/*
 
 # Aptos Move build output
 aptos/typescript/move/build
