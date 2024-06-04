@@ -4,12 +4,11 @@ import {
     Network, 
     SingleKeyAccount, 
     AccountAddress, 
-    Ed25519PrivateKey, 
     SimpleTransaction,
     MultiAgentTransaction,
     MoveString,
-    CommittedTransactionResponse,
-    SigningSchemeInput
+    SigningSchemeInput,
+    PendingTransactionResponse
 } from "@aptos-labs/ts-sdk";
 import { readFileSync } from "fs";
 import { GasStationClient } from "@shinami/clients/aptos";
@@ -21,15 +20,73 @@ const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET}));
 const SHINAMI_TESTNET_GAS_KEY = "{{APTOS_TESTNET_GAS_STATION_ACCESS_KEY}}";
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_KEY);
 
-let executedTransaction = await buildSponsorSignAndSubmitSimpleTransaction();
-// let executedTransaction = await buildSponsorSignAndSubmitMultiAgentTransaction();
-console.log("\nTransaction hash:", executedTransaction.hash);
-console.log("Transaction status:", executedTransaction.vm_status);
+
+
+//
+// -- Choose which sample code function to use to generate a PendingTransactionResponse //
+//
+const committedTransaction = await
+    sponsorTransactionBlockSimple();
+    // sponsorTransasctionBlockMultiAgent();
+    // sponsorAndSubmitTransactionBlockSimple();
+    // sponsorAndSubmitTransactionBlockMultiAgent();
+    // checkAndTopUpFundBalance();
+
+
+// Wait for the transaction to move past the pending state 
+if (committedTransaction) {
+    const executedTransaction = await aptos.waitForTransaction({
+        transactionHash: committedTransaction.hash
+      });
+    console.log("\nTransaction hash:", executedTransaction.hash);
+    console.log("Transaction status:", executedTransaction.vm_status);
+}
+
+
+
+// async function checkAndTopUpFundBalance(): Promise<PendingTransactionResponse | void> {
+//     const MIN_BALANCE = 1_000_000_000; // 10 APT
+//     const MAX_BALANCE = 5_000_000_000; // 50 APT
+
+//     const resp = gasStationClient.getFund();
+//     const availableBalance = resp.balance - resp.inFlight;
+
+//     if (availableBalance < MIN_BALANCE) {
+//         // 1. Generate the account that will make the deposit.
+//         //  In practice, you'd have an account or set of accounts that
+//         //  you can transfer from as needed.
+//         const SHINAMI_SPONSORSHIP_ACCOUNT = await generateSingleKeyAccountEd25519(true);
+
+//         // 2. Determine how much to transfer to your Gas Station fund.
+//         let topUpAmount = MAX_BALANCE - availableBalance;
+//         topUpAmount = 90000000; // overwrite in our test because the account we generated has 1 APT
+
+//         // 3. Build the deposit transaction
+//         let transaction = await aptos.transferCoinTransaction({
+//             sender: SHINAMI_SPONSORSHIP_ACCOUNT.accountAddress,
+//             recipient: resp.depositAddress,
+//             amount: topUpAmount
+//         })
+        
+//         // 4. Generate the sender's signature. 
+//         const senderAuthenticator = aptos.transaction.sign({ 
+//             signer: SHINAMI_SPONSORSHIP_ACCOUNT, 
+//             transaction 
+//         });
+    
+//         // 5. Submit the transaction with the sender signature
+//         return await aptos.transaction.submit.simple({
+//             transaction,
+//             senderAuthenticator,
+//         });
+//     }
+// }
 
 
 
 // Build, sponsor, sign, and execute a simple Move call transaction
-async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTransactionResponse> {
+async function sponsorTransactionBlockSimple(): Promise<PendingTransactionResponse> {
+
     // 1. Set up our sender.
     const sender = await generateSingleKeyAccountEd25519();
     
@@ -40,26 +97,28 @@ async function buildSponsorSignAndSubmitSimpleTransaction(): Promise<CommittedTr
     let feePayerAuthenticator = await gasStationClient.sponsorTransaction(transaction);
     // Note that the SDK updates the transaction's feePayer address on a successful sponsorship
     console.log("\ntransaction.feePayerAddress post-sponsorship:", transaction.feePayerAddress);
+
+    let badtx = await aptos.transaction.build.simple({
+        sender: sender.accountAddress,
+        withFeePayer: true,
+        data: {
+          function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+          functionArguments: [new MoveString("other message")]
+        }
+    });
     
     // 4. Generate the sender's signature. 
     const senderAuthenticator = aptos.transaction.sign({ 
         signer: sender, 
-        transaction 
+        transaction: badtx
     });
     
     // 5. Submit the transaction with the sender and fee payer signatures
-    const committedTransaction = await aptos.transaction.submit.simple({
+    return await aptos.transaction.submit.simple({
         transaction,
         senderAuthenticator,
         feePayerAuthenticator: feePayerAuthenticator,
     });
-    
-    // 6. Wait for and retrieve the executed transaction
-    const executedTransaction = await aptos.waitForTransaction({
-        transactionHash: committedTransaction.hash
-    });
-    
-    return executedTransaction;
 }
 
 
@@ -77,6 +136,7 @@ async function generateSingleKeyAccountEd25519(fund = false) : Promise<SingleKey
     }
     return account;
 }
+
 
 
 // Build a Move call simple transaction with a fee payer
@@ -101,7 +161,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
 
 
 // Build, sponsor, sign, and execute a multiAgent Move script transaction
-async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<CommittedTransactionResponse> {
+async function sponsorTransasctionBlockMultiAgent(): Promise<PendingTransactionResponse> {
 
     // 1. Generate two funded accounts to act as sender and secondary signer
     const sender = await generateSingleKeyAccountEd25519(true); 
@@ -127,20 +187,12 @@ async function buildSponsorSignAndSubmitMultiAgentTransaction(): Promise<Committ
     }); 
 
     // 5. Submit the transaction with the sender, seconardy signer, and feePayer signatures
-    const committedTransaction = await aptos.transaction.submit.multiAgent({
+    return await aptos.transaction.submit.multiAgent({
         transaction,
         senderAuthenticator,
         additionalSignersAuthenticators: [secondarySignerAuthenticator],
         feePayerAuthenticator: feePayerAuthenticator
     });
-
-    // 6. Wait for and retrieve the executed transaction
-    const executedTransaction = await aptos.waitForTransaction({
-        transactionHash: committedTransaction.hash
-    });
-
-    return executedTransaction;
-
 }
 
 
@@ -169,3 +221,66 @@ async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondar
     console.log(transaction);
     return transaction;
 }
+
+
+
+// Build, sign, then sponsor and submit a simple transaction
+// async function sponsorAndSubmitTransactionBlockSimple(): Promise<PendingTransactionResponse> {
+//     // 1. Set up our sender.
+//     const sender = await generateSingleKeyAccountEd25519();
+    
+//     // 2. Build a simple transaction.
+//     const transaction = await buildSimpleMoveCallTransaction(sender.accountAddress, Math.floor(Date.now() / 1000) + (5 * 60));
+
+//     // 3. Generate the sender's signature. 
+//     const senderAuthenticator = aptos.transaction.sign({ 
+//         signer: sender, 
+//         transaction 
+//     });  
+
+//     console.log(transaction.rawTransaction.bcsToHex().toString());
+//     console.log(senderAuthenticator.bcsToHex().toString());
+
+//     // 4. Ask Shinami to sponsor and submit the transaction
+//     // return await gasStationClient.sponsorAndSubmitTransaction(
+//     //     transaction,
+//     //     senderAuthenticator
+//     // );
+// }
+
+
+
+// Build, sign, then sponsor and submit a multiAgent transaction
+// async function sponsorAndSubmitTransactionBlockMultiAgent(): Promise<PendingTransactionResponse> {
+//     // 1. Generate two funded accounts to act as sender and secondary signer
+//     const sender = await generateSingleKeyAccountEd25519(true); 
+//     const secondarySigner = await generateSingleKeyAccountEd25519(true); 
+
+//     // 2. Build a multiAgent transaction
+//     let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress, Math.floor(Date.now() / 1000) + (5 * 60));
+
+//     // 5. Generate the sender and secondary signer signatures
+//     const senderAuthenticator = aptos.transaction.sign({ 
+//         signer: sender, 
+//         transaction 
+//     });
+
+//     const secondarySignerAuthenticator = aptos.transaction.sign({
+//         signer: secondarySigner,
+//         transaction 
+//     }); 
+
+//     console.log(transaction.rawTransaction.bcsToHex().toString());
+//     console.log(senderAuthenticator.bcsToHex().toString());
+//     console.log(
+//         { "address" : secondarySigner.accountAddress.toString(),
+//         "signature" : secondarySignerAuthenticator.bcsToHex().toString() }
+//     );
+
+//     // 4. Ask Shinami to sponsor and submit the transaction
+//     // return await gasStationClient.sponsorAndSubmitTransaction(
+//     //     transaction,
+//     //     senderAuthenticator.
+//     //     [secondarySignerAuthenticator]
+//     // );
+// }
