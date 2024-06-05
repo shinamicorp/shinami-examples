@@ -8,20 +8,30 @@ import {
   ShinamiWalletSigner,
   KeyClient
 } from "@shinami/clients/sui";
-import { 
-  ALL_SERVICES_TESTNET_ACCESS_KEY,
-  EXAMPLE_MOVE_PACKAGE_ID,
-  USER_ID_TO_INVISIBLE_WALLET_ID_AND_SECRET_MAP 
-} from "./envs.ts";
+import dotenvFlow from 'dotenv-flow';
+
+dotenvFlow.config();
+export const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
+export const EXAMPLE_MOVE_PACKAGE_ID = process.env.EXAMPLE_MOVE_PACKAGE_ID;
+export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;;
+export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
+
+
+if (!(ALL_SERVICES_TESTNET_ACCESS_KEY && EXAMPLE_MOVE_PACKAGE_ID)) {
+  throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env variables not  set');
+}
+const sui = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
 const app = express();
 app.use(express.json());
 
-
 app.post('/buildSponsoredtx', async (req, res, next) => {
   try {
-  const gaslessTxBytes = await buildGasslessMoveCall(req.body.x, req.body.y);
-  const sponsorship = await gasClient.sponsorTransactionBlock(gaslessTxBytes, req.body.sender);
+    const gaslessTxBytes = await buildGasslessMoveCall(req.body.x, req.body.y);
+    const sponsorship = await gasClient.sponsorTransactionBlock(gaslessTxBytes, req.body.sender);
   res.json(sponsorship);
   } catch (err) {
       next(err)
@@ -29,13 +39,14 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 });
 
 app.post('/invisibleWalletTx', async (req, res, next) => {
-  const x = req.body.x;
-  const y = req.body.y;
-  const userId = req.body.userId
   try {
     const gaslessTxBytes = await buildGasslessMoveCall(req.body.x, req.body.y);
-    const sponsorAndExecuteResp =  await sponsorAndExecuteTransactionForUser(gaslessTxBytes, req.body.userId);
-    res.json(sponsorAndExecuteResp);
+    if (USER123_WALLET_ID && USER123_WALLET_SECRET){
+      const sponsorAndExecuteResp =  await sponsorAndExecuteTransactionForWallet(gaslessTxBytes, USER123_WALLET_ID, USER123_WALLET_SECRET);
+      res.json(sponsorAndExecuteResp);
+    } else {
+      throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .local.env varaibles not set');
+    }
   } catch (err) {
       next(err)
   }
@@ -45,28 +56,18 @@ ViteExpress.listen(app, 3000, () =>
   console.log("Server is listening on port 3000..."),
 );
 
-
-
-const sui = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-
-async function sponsorAndExecuteTransactionForUser(gaslessTxBytes: string, userId: string) {
-  const walletInfo = USER_ID_TO_INVISIBLE_WALLET_ID_AND_SECRET_MAP.get(userId);
+async function sponsorAndExecuteTransactionForWallet(gaslessTxBytes: string, walletId: string, walletSecret: string) {
   const signer = new ShinamiWalletSigner(
-    walletInfo.walletId,
+    walletId,
     walletClient,
-    walletInfo.walletSecret,
+    walletSecret,
     keyClient
   );
   
   const CREATE_WALLET_IF_NOT_FOUND = true;
-  let WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+  const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
   return await signer.executeGaslessTransactionBlock(gaslessTxBytes);
 }
-
-
 
 async function buildGasslessMoveCall(x: number, y: number): Promise<string> {
   return await buildGaslessTransactionBytes({

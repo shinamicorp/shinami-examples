@@ -38,9 +38,7 @@ bower_components
 build/Release
 
 # Dependency directories
-aptos/typescript/node_modules
-sui/typescript/backend_examples/node_modules
-sui/typescript/dapp_kit_example/node_modules
+node_modules/
 jspm_packages/
 
 # TypeScript v1 declaration files
@@ -71,7 +69,7 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+# local env files
 .env.test
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -109,8 +107,8 @@ dist
 .DS_Store
 
 # Node build output
-sui/typescript/backend_examples/build/*
-aptos/typescript/build/*
+sui/typescript/backend_examples/build/
+aptos/typescript/build/
 
 # Aptos Move build output
-aptos/typescript/move/build
+aptos/typescript/move/build/
