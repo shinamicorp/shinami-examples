@@ -26,10 +26,10 @@ const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_KEY);
 // -- Choose which sample code function to use to generate a PendingTransactionResponse //
 //
 const committedTransaction = await
-    sponsorTransactionBlockSimple();
-    // sponsorTransactionBlockMultiAgent();
-    // sponsorAndSubmitTransactionBlockSimple();
-    // sponsorAndSubmitTransactionBlockMultiAgent();
+    sponsorTransactionSimple();
+    // sponsorTransactionMultiAgent();
+    // sponsorAndSubmitSignedTransactionSimple();
+    // sponsorAndSubmitSignedTransactionMultiAgent();
 
 
 // Wait for the transaction to move past the pending state 
@@ -44,7 +44,7 @@ if (committedTransaction) {
 
 
 // Build, sponsor, sign, and execute a simple Move call transaction
-async function sponsorTransactionBlockSimple(): Promise<PendingTransactionResponse> {
+async function sponsorTransactionSimple(): Promise<PendingTransactionResponse> {
 
     // 1. Set up our sender.
     const sender = await generateSingleKeyAccountEd25519();
@@ -74,7 +74,7 @@ async function sponsorTransactionBlockSimple(): Promise<PendingTransactionRespon
 
 
 // Build, sponsor, sign, and execute a multiAgent Move script transaction
-async function sponsorTransactionBlockMultiAgent(): Promise<PendingTransactionResponse> {
+async function sponsorTransactionMultiAgent(): Promise<PendingTransactionResponse> {
 
     // 1. Generate two funded accounts to act as sender and secondary signer
     const sender = await generateSingleKeyAccountEd25519(true); 
@@ -111,7 +111,7 @@ async function sponsorTransactionBlockMultiAgent(): Promise<PendingTransactionRe
 
 
 // Build, sign, then sponsor and submit a simple transaction
-async function sponsorAndSubmitTransactionBlockSimple(): Promise<PendingTransactionResponse> {
+async function sponsorAndSubmitSignedTransactionSimple(): Promise<PendingTransactionResponse> {
     // 1. Set up our sender.
     const sender = await generateSingleKeyAccountEd25519();
     
@@ -134,7 +134,7 @@ async function sponsorAndSubmitTransactionBlockSimple(): Promise<PendingTransact
 
 
 // Build, sign, then sponsor and submit a multiAgent transaction
-async function sponsorAndSubmitTransactionBlockMultiAgent(): Promise<PendingTransactionResponse> {
+async function sponsorAndSubmitSignedTransactionMultiAgent(): Promise<PendingTransactionResponse> {
     // 1. Generate two funded accounts to act as sender and secondary signer
     const sender = await generateSingleKeyAccountEd25519(true); 
     const secondarySigner = await generateSingleKeyAccountEd25519(true); 
