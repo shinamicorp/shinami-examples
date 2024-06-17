@@ -17,7 +17,7 @@ import { GasStationClient } from "@shinami/clients/aptos";
 const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET}));
 
 // Create a Shinami Gas Station client for sponsoring our transactions.
-const SHINAMI_TESTNET_GAS_KEY =  "{{APTOS_TESTNET_GAS_STATION_ACCESS_KEY}}";
+const SHINAMI_TESTNET_GAS_KEY = "{{APTOS_TESTNET_GAS_STATION_ACCESS_KEY}}";
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_KEY);
 
 
