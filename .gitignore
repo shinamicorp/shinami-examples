@@ -110,7 +110,7 @@ dist
 .DS_Store
 
 # Node build output
-sui/typescript/build
+sui/typescript/backend_examples/build
 aptos/typescript/build
 
 # Aptos Move build output
