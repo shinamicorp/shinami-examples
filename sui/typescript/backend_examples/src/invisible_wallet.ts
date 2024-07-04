@@ -18,7 +18,6 @@ const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 const WALLET_ONE_ID = "{{walletOneId}}";
 const WALLET_ONE_SECRET = "{{walletOneSecret}}";
 
-
 // 4. Instantiate your Shinami clients
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
