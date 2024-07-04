@@ -51,7 +51,7 @@ const txDigest = await
   sponsorSignExecuteInOneRequest(signer, gaslessTx);
   // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
   // signAndExecuteANonSponsoredTransaction(signer); // Requires the wallet to own a SUI coin.
-                                                     //  Use the facet to transfer 1 SUI to it.
+                                                     //  Use the faucet to transfer 1 SUI to it.
 
 const txInfo = await nodeClient.waitForTransaction({ 
   digest: txDigest,

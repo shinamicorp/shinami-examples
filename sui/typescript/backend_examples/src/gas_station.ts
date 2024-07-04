@@ -35,11 +35,13 @@ const keyPairFromSecretKey = Ed25519Keypair.fromSecretKey(secretKey);
 const SENDER_ADDRESS = keyPairFromSecretKey.toSuiAddress();
 console.log("sender address:", SENDER_ADDRESS);
 
-// Coin ids for some of the commented out function calls.
-// The coins must all be owned by the sender controlled by the KeyPair.
+// Values for some of the commented out function calls.
+// Objects must be owned by the sender controlled by the KeyPair.
 const SUI_COIN_TO_DEPOSIT_ID = "{{SUIcoinObjectID}}";
-const COIN_TO_SPLIT_FROM_ID = "{{SUIcoinObjectID}}"
-const COIN_TO_MERGE_ID =  "{{SUIcoinObjectID}}"
+const COIN_TO_SPLIT_FROM_ID = "{{SUIcoinObjectID}}";
+const COIN_TO_MERGE_ID =  "{{SUIcoinObjectID}}";
+const OBJ_ID_TO_TRANSFER = "{{objId}}";
+const RECIPIENT_ADDRESS = "{{SuiAddress}}";
 
 
 // 5. Generate the GaslessTransaction for sponsorship 
@@ -49,6 +51,7 @@ const gaslessTx =  await
   // checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
   // splitCoinOwnedByGaslessTransaction(COIN_TO_SPLIT_FROM_ID, SENDER_ADDRESS);
   // mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID);
+  // transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, RECIPIENT_ADDRESS);
 
 if (gaslessTx) {
   gaslessTx.sender = SENDER_ADDRESS;
@@ -123,7 +126,7 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
 }
 
 
-//
+
 //
 // -- Check a fund's balance and deposit more SUI in the fund if it's low -- //
 //
@@ -146,7 +149,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
 
 //
 //
-// -- Other TransactionBlock examples  -- //
+// -- Other GaslessTransaction examples  -- //
 //
 //
 
@@ -171,7 +174,7 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
 //  An easy example is a small coin you created with the above transaction.
 //  We also call this function inside the `checkFundBalanceAndDepositIfNeeded` function.
 async function transferObjectToRecipientGaslessTransaction(objectID: string, recipientAddress: string) : Promise<GaslessTransaction> {
-  let gaslessPayloadBase64 = await buildGaslessTransaction(
+  let gaslessTx = await buildGaslessTransaction(
     async (txb) => {
       txb.transferObjects(
         [txb.object(objectID)],
@@ -182,7 +185,7 @@ async function transferObjectToRecipientGaslessTransaction(objectID: string, rec
       sui: nodeClient
     }
   );
-  return gaslessPayloadBase64;
+  return gaslessTx;
 }
 
 //  Merge one coin (or more) into another, destroying the 
