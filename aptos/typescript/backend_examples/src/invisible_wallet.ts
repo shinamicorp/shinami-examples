@@ -1,6 +1,7 @@
 // 1. Import everything we need for the tutorial
 import { 
     AccountAddress,
+    AccountAuthenticatorEd25519,
     Aptos, 
     AptosConfig, 
     Network, 
@@ -47,6 +48,10 @@ const executedTransaction = await aptosClient.waitForTransaction({
 console.log("\nTransaction hash:", executedTransaction.hash);
 console.log("Transaction status:", executedTransaction.vm_status);
 
+// 8. (optional) Uncomment to sign a transaction and verify the signature:
+// await signAndVerifyTransaction(signer, aptosClient);
+
+
 
 // Build a SimpleTransaction that makes a Move call to a Testnet module.
 async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = true): Promise<SimpleTransaction> {
@@ -58,4 +63,25 @@ async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = 
           functionArguments: ["hello"]
         }
     });
+}
+
+
+
+// Sign a non-fee-payer transaction with an Invisible Wallet and verify the signature
+async function signAndVerifyTransaction(signer: ShinamiWalletSigner, aptosClient: Aptos): Promise<void> {
+    // 1. Generate a transaction without a fee payer and have the Invisible Wallet sign it.
+    const sender = await signer.getAddress();
+    const transaction = await simpleMoveCallTransaction(sender, false)
+    const accountAuthenticator = await signer.signTransaction(transaction);
+
+    // 2. Verify the signature.
+    const signingMessage = aptosClient.getSigningMessage({ transaction });
+    const accountAuthenticatorEd25519 = accountAuthenticator as AccountAuthenticatorEd25519;
+    const verifyResult = accountAuthenticatorEd25519.public_key.verifySignature(
+      {
+        message: signingMessage,
+        signature: accountAuthenticatorEd25519.signature,
+      },
+    );
+    console.log("\nInvisible Wallet signature was valid:", verifyResult);
 }
