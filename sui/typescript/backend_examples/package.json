@@ -3,8 +3,8 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
-    "@mysten/sui": "^1.2.0",
-    "@shinami/clients": "^0.9.0"
+    "@mysten/sui": "^1.2.1",
+    "@shinami/clients": "^0.9.1"
   },
   "type": "module"
 }
