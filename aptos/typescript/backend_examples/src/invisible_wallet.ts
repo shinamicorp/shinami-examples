@@ -16,13 +16,13 @@ import {
 // 2. Copy your access key value
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
-// 3. Set up a walletId an its associated secret. Just for the tutorial. Your
-//    app should figure out the best way to manage it's wallet Ids and secrets.
+// 3. Set up a walletId and its associated secret. Just for the tutorial. Your
+//    app should figure out the best way to manage its wallet Ids and secrets.
 const WALLET_ID = "{{walletID}}";
 const WALLET_SECRET = "{{walletSecret}}";
 
 // 4. Instantiate your Aptos and Shinami clients
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET}));
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
@@ -36,10 +36,12 @@ const signer = new ShinamiWalletSigner(
 
 // 6. Create the Invisible Wallet
 const CREATE_WALLET_IF_NOT_FOUND = true;
-const INITIALIZE_ON_CHAIN = false;
+const INITIALIZE_ON_CHAIN = true;
 const walletAddress = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND, INITIALIZE_ON_CHAIN);
 
-// 7. Sponsor and execute a transaction for the Invisible Wallet
+// 7. Sponsor and execute a transaction for the Invisible Wallet. This requires
+//     the Gas Station fund associated with this access key to have sufficient 
+//     APT to pay for the transaction.
 const simpleTx = await simpleMoveCallTransaction(walletAddress); 
 const pendingTx = await signer.executeGaslessTransaction(simpleTx);
 
