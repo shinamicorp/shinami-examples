@@ -16,7 +16,8 @@ import {
 // 2. Copy your access key value
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
-// 3. Set up a walletId an its associated secret
+// 3. Set up a walletId an its associated secret. Just for the tutorial. Your
+//    app should figure out the best way to manage it's wallet Ids and secrets.
 const WALLET_ID = "{{walletID}}";
 const WALLET_SECRET = "{{walletSecret}}";
 
