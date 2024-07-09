@@ -34,9 +34,12 @@ const signer = new ShinamiWalletSigner(
     keyClient
 );
 
-// 6. Create the Invisible Wallet
+// 6. Create the Invisible Wallet. We don't need to initialize it on Testnet 
+//    here because the next action for the wallet is a transaction where it is
+//    the sender and your Gas Station fund is the fee payer. This transaction
+//    will initialize it on Testnet.
 const CREATE_WALLET_IF_NOT_FOUND = true;
-const INITIALIZE_ON_CHAIN = true;
+const INITIALIZE_ON_CHAIN = false; 
 const walletAddress = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND, INITIALIZE_ON_CHAIN);
 
 // 7. Sponsor and execute a transaction for the Invisible Wallet. This requires
@@ -51,7 +54,7 @@ const executedTransaction = await aptosClient.waitForTransaction({
 console.log("\nTransaction hash:", executedTransaction.hash);
 console.log("Transaction status:", executedTransaction.vm_status);
 
-// 8. (optional) Uncomment to sign a transaction and verify the signature:
+// 8. (optional) Uncomment the next line to sign a transaction and verify the signature:
 // await signAndVerifyTransaction(signer, aptosClient);
 
 
@@ -72,12 +75,19 @@ async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = 
 
 // Sign a non-fee-payer transaction with an Invisible Wallet and verify the signature
 async function signAndVerifyTransaction(signer: ShinamiWalletSigner, aptosClient: Aptos): Promise<void> {
-    // 1. Generate a transaction without a fee payer and have the Invisible Wallet sign it.
-    const sender = await signer.getAddress();
-    const transaction = await simpleMoveCallTransaction(sender, false)
+    // 1. Generate a transaction where an Invisible Wallet is the sender and fee payer. 
+    //    We ensure that the wallet is initialized on chain, because it must be in 
+    //    order to sign the transaction below.
+    const CREATE_WALLET_IF_NOT_FOUND = true;
+    const INITIALIZE_ON_CHAIN = true;
+    const walletAddress = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND, INITIALIZE_ON_CHAIN);
+    const WITH_FEE_PAYER = false;
+    const transaction = await simpleMoveCallTransaction(walletAddress, WITH_FEE_PAYER);
+
+    // 2. Sign the transaction
     const accountAuthenticator = await signer.signTransaction(transaction);
 
-    // 2. Verify the signature.
+    // 3. Verify the signature.
     const signingMessage = aptosClient.getSigningMessage({ transaction });
     const accountAuthenticatorEd25519 = accountAuthenticator as AccountAuthenticatorEd25519;
     const verifyResult = accountAuthenticatorEd25519.public_key.verifySignature(
