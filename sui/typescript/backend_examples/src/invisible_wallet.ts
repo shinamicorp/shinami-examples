@@ -43,9 +43,7 @@ const gaslessTx = await buildGaslessTransaction(
   { sui: nodeClient }
 );
 
-//
 // 8. Choose a sample code method to run
-//
 const txDigest = await
   sponsorSignExecuteInOneRequest(signer, gaslessTx);
   // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
@@ -62,10 +60,9 @@ console.log("\ntxDigest: ", txDigest);
 console.log("status:", txInfo.effects?.status.status);
 
 
-//
-// 9. Sign a personal message with the Invisible Wallet and verify that the wallet signed it.
-// 
-const result = await signAndVerifyPersonalMessage(signer);
+// 9. (optional) Uncomment th enext line to sign a personal message with 
+//      the Invisible Wallet and then verify that the wallet signed it.
+// await signAndVerifyPersonalMessage(signer);
 
 
 
@@ -74,7 +71,7 @@ const result = await signAndVerifyPersonalMessage(signer);
 async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner, 
                                                 gaslessTx: GaslessTransaction) : Promise<string> {
   const sponsorSignAndExecuteResponse = await signer.executeGaslessTransaction(
-    gaslessTx, // by not setting gaslessTx.gasBudget we take advantage of Shinami's auto-budgeting feature
+    gaslessTx, // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
     { showEffects: true },
     "WaitForEffectsCert" 
     // or use  "WaitForLocalExecution" if you need read-after-write 
@@ -95,7 +92,7 @@ async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
   const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY); 
   gaslessTx.sender = await signer.getAddress(); 
   const sponsoredResponse = await gasStationClient.sponsorTransaction(
-    gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami's auto-budgeting feature
+    gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
   );
 
   // 2. Sign the transaction (the Invisible Wallet is the sender)
@@ -133,7 +130,7 @@ async function signAndExecuteANonSponsoredTransaction(signer: ShinamiWalletSigne
   txb.setGasBudget(GAS_BUDGET);
   txb.setGasOwner(SENDER_ADDRESS);
 
-  // 2. Generate the BCS serialized transaction data WITH gas data by 
+  // 3. Generate the BCS serialized transaction data WITH gas data by 
   //     setting onlyTransactionKind to false
   const txBytes = await txb.build({ client: nodeClient, onlyTransactionKind: false});
   // 4. Sign the transaction (the Invisible Wallet is the sender)
@@ -191,7 +188,7 @@ async function signAndVerifyPersonalMessage(signer: ShinamiWalletSigner) : Promi
 
   // 5. Check whether the signer's address matches the Invisible Wallet's address
   if (publicKey.toSuiAddress() !== await signer.getAddress()) {
-      console.log("\nSignature was valid for the message, but was signed by a different key pair, :(");
+      console.log("\nSignature valid for message, but was signed by a different key pair, :(");
       return false;
   } else {
       console.log("\nSignature was valid and signed by the Invisible Wallet!");
