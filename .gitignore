@@ -37,8 +37,8 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
-gas-station/typescript/build/*
-invisible-wallet/typescript/build/*
+gas-station/typescript/backend_examples/build/*
+invisible-wallet/typescript/backend_examples/build/*
 
 # Dependency directories
 node_modules/
@@ -111,7 +111,7 @@ dist
 
 # Node build output
 sui/typescript/build
-aptos/typescript/build
+aptos/typescript/backend_examples/build
 
 # Aptos Move build output
-aptos/typescript/move/build
+aptos/typescript/move/backend_examples/build
