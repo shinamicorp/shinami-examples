@@ -66,14 +66,14 @@ function App() {
       }
     });
 
-    if (finalResult.effects && finalResult.effects.status.status == "success"){
-      if (finalResult.events){
+    if (finalResult.effects && finalResult.events && finalResult.effects.status.status == "success"){
+        console.log(finalResult.events);
         const resultObj = finalResult.events[0].parsedJson as AddCallEvent;
         const result = resultObj.result;
         setLatestDigest(digest);
         setLatestResult(result);
         setnewSuccessfulResult(true);
-      }
+
     } else {
       console.log("Transaction did not execute successfully.");
     }
@@ -146,7 +146,7 @@ function App() {
       <Box>
         <h3>Connect your wallet for a connected wallet transaction:</h3>
         <ConnectButton />
-        <label>Connected wallet address: {currentAccount ? currentAccount.address : "No wallet connected"} </label>
+        <label>Wallet address: {currentAccount ? currentAccount.address : "no wallet connected"} </label>
         </Box>
       </Flex>
     </>
