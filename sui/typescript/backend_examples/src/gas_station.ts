@@ -98,11 +98,11 @@ async function clockMoveCallGaslessTransaction() : Promise<GaslessTransaction> {
 // Returns the transaction digest of the excuted transaction if successful.
 //
 async function sponsorAndExecuteTransactionForKeyPairSender(
-  gaslessTx: GaslessTransaction, keypair: Ed25519Keypair): Promise<string> {
+  gaslessTx: GaslessTransaction, keypair: Ed25519Keypair) : Promise<string> {
 
   //  1. Send the GaslessTransaction to Shinami Gas Station for sponsorship.
   let sponsoredResponse = await gasStationClient.sponsorTransaction(
-    gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami's auto-budgeting feature
+    gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
   );
   console.log("\nsponsorTransactionBlock response:");
   console.log(sponsoredResponse);
@@ -130,16 +130,21 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
 //
 // -- Check a fund's balance and deposit more SUI in the fund if it's low -- //
 //
-async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string): Promise<GaslessTransaction | undefined> {
+async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string) : 
+                                                   Promise<GaslessTransaction | undefined> {
   const MIN_FUND_BALANCE_MIST = 50_000_000_000; // 50 SUI
   const { balance, inFlight, depositAddress }  = await gasStationClient.getFund();
 
-  // Deposit address can be null - see our FAQ for how to generate an address: https://docs.shinami.com/docs/faq
+  // Deposit address can be null - see our FAQ for how to generate an address: 
+  //   https://docs.shinami.com/docs/faq
   if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_MIST)) {
       // We're not actually checking it's a SUI coin we're transferring, which you should do.
       // We're also going to sponsor this with the gas fund we're depositing to, which only
       // works if there's a little SUI left.
-      return await transferObjectToRecipientGaslessTransaction(suiCoinObjectIdToDeposit, depositAddress);
+      return await transferObjectToRecipientGaslessTransaction(
+        suiCoinObjectIdToDeposit, 
+        depositAddress
+      );
   }
 
   return undefined;
@@ -154,7 +159,8 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
 //
 
 //  Create two new small coins by taking MIST from a larger one.
-async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipientAddress: string) : Promise<GaslessTransaction> {
+async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipientAddress: string) : 
+                                                                        Promise<GaslessTransaction> {
   return await buildGaslessTransaction(
     async (txb) => {
       const [coin1, coin2] = txb.splitCoins(txb.object(coinToSplitID), [
@@ -173,7 +179,8 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
 //  Transfer one or more objects owned by the sender to the recipient.
 //  An easy example is a small coin you created with the above transaction.
 //  We also call this function inside the `checkFundBalanceAndDepositIfNeeded` function.
-async function transferObjectToRecipientGaslessTransaction(objectID: string, recipientAddress: string) : Promise<GaslessTransaction> {
+async function transferObjectToRecipientGaslessTransaction(objectID: string, recipientAddress: string) : 
+                                                                            Promise<GaslessTransaction> {
   let gaslessTx = await buildGaslessTransaction(
     async (txb) => {
       txb.transferObjects(
@@ -190,7 +197,8 @@ async function transferObjectToRecipientGaslessTransaction(objectID: string, rec
 
 //  Merge one coin (or more) into another, destroying the 
 //   small coin(s) and increasing the value of the large one.
-async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string) : Promise<GaslessTransaction> {
+async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string) : 
+                                                              Promise<GaslessTransaction> {
   return await buildGaslessTransaction(
     async (txb) => {
       txb.mergeCoins(txb.object(targetCoinID), [txb.object(coinToMergeID)]);
