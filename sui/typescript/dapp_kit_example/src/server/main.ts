@@ -14,12 +14,12 @@ import dotenvFlow from 'dotenv-flow';
 dotenvFlow.config();
 export const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
 export const EXAMPLE_MOVE_PACKAGE_ID = process.env.EXAMPLE_MOVE_PACKAGE_ID;
-export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;;
+export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
 export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
 
 if (!(ALL_SERVICES_TESTNET_ACCESS_KEY && EXAMPLE_MOVE_PACKAGE_ID)) {
-  throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env variables not  set');
+  throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env.local variables not set');
 }
 const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
@@ -38,7 +38,7 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
       const sponsorAndExecuteResp =  await sponsorAndExecuteTransactionForWallet(gaslessTx, USER123_WALLET_ID, USER123_WALLET_SECRET);
       res.json(sponsorAndExecuteResp);
     } else {
-      throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .local.env varaibles not set');
+      throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
     }
   } catch (err) {
       next(err);

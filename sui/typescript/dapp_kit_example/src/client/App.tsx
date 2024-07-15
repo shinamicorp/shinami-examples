@@ -9,16 +9,19 @@ import {
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
+import { useShinamiClient }  from "./hooks/useShinamiClient.js";
 
 function App() {
   const currentAccount = useCurrentAccount();
   const { mutateAsync: signTransaction } = useSignTransaction();
   const client = useSuiClient();
+  const shinamiClient = useShinamiClient(); // My limited but functional replacement for dapp-kit client component and hook
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [firstInt, setFirstInt] = useState<string>();
   const [secondInt, setsecondInt] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
+
   
   type AddCallEvent = {
     result: string;
@@ -67,7 +70,7 @@ function App() {
   // has been checkpointed and propagated to the node, and the node returns 
   // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
-    const finalResult = await client.waitForTransaction({ 
+    const finalResult = await shinamiClient.waitForTransaction({ 
       digest: digest,
       options: {
         showEffects: true,
@@ -160,10 +163,10 @@ function App() {
         }
       </Box>
       <Box>
-        <h3>Connect your wallet for a connected wallet transaction:</h3>
-        <ConnectButton />
-        <label>Wallet address: {currentAccount ? currentAccount.address : "no wallet connected"} </label>
-        </Box>
+      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
+      <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount.address : "backend Shinami Invisible Wallet"} </label>
+      </Box>
+      <ConnectButton />
       </Flex>
     </>
   );
