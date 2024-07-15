@@ -24,6 +24,11 @@ function App() {
     result: string;
   };
 
+  // 1. Get the user's input and update the page state.
+  // 2. Build, sponsor, and execute a Move call tranasction with the given user input. 
+  //    If there is a connected wallet, represented by `currentAccount` having a value,
+  //    then the connected wallet is the sender. Otherwise, the sender is a backend
+  //    Shinami Invisible Wallet (hard coded for this very simple example app). 
   const executeTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setnewSuccessfulResult(false);
@@ -50,13 +55,17 @@ function App() {
       if(suiTxResponse.digest) {
           waitForTxAndUpdateResult(suiTxResponse.digest);
       } else {
-          console.log("Transaction did not execute successfully.");
+          console.log("Unable to find a digest returned from the backend.");
       }  
   } catch (e) {
     console.log(e);
   }
   }
 
+
+  // Poll the Full node represented by the SuiClient until the given digest
+  // has been checkpointed and propagated to the node, and the node returns 
+  // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
     const finalResult = await client.waitForTransaction({ 
       digest: digest,
@@ -80,6 +89,9 @@ function App() {
   }
 
 
+  // 1. Ask the backend to build and sponsor a Move call transction with the given user input.
+  // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
+  // 3. Ask the backend to execute the signed transaction.
   const connectedWalletTx = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
       const sponsorshipResp = await axios.post('/buildSponsoredtx', {
         x: x,
@@ -87,18 +99,22 @@ function App() {
         sender: senderAddress
       });
 
-      // const txb = Transaction.from(sponsorshipResp.data.txBytes);
       const { signature } = await signTransaction({
         transaction: sponsorshipResp.data.txBytes
       });
-      
-      return await client.executeTransactionBlock({
-            transactionBlock: sponsorshipResp.data.txBytes,
-            signature: [signature, sponsorshipResp.data.signature]
+
+      const resp =  await axios.post('/executeSponsoredTx', {
+        tx: sponsorshipResp.data.txBytes,
+        sponsorSig: sponsorshipResp.data.signature,
+        senderSig: signature
       });
+      return resp.data;
   }
 
 
+  // Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
+  // given user input. The sender is the user's Invisible Wallet, which in this example app
+  // is just a hard-coded wallet for simplicity.
   const invisibleWalletTx = async (x: number, y: number): Promise<SuiTransactionBlockResponse> => {
       const resp = await axios.post('/invisibleWalletTx', {
         x: x,
