@@ -1,0 +1,1 @@
+export const NODE_SERVICE_PUBLICLY_VISIBLE_ACCESS_KEY = '{{nodeServiceAccessKey}}';
