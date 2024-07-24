@@ -11,7 +11,9 @@ import {
   SimpleTransaction,
   Deserializer, 
   AccountAuthenticator,
-  Hex
+  Hex,
+  MoveString,
+  AccountAddress
 } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
@@ -50,7 +52,9 @@ function App() {
     let pendingTxResponse = undefined;
     try {
       if (currentAccount) {
-        pendingTxResponse = await connectedWalletTx(message, currentAccount);
+        pendingTxResponse = await connectedWalletTxBEBuildFESubmit(message, currentAccount);
+                            // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+                            // await connectedWalletTxFEBuildBESubmit(message, currentAccount);
       }
       else {
         pendingTxResponse = await invisibleWalletTx(message);
@@ -90,26 +94,94 @@ function App() {
   }
 
 
-  // 1. Ask the backend to build and sponsor a Move call transction with the given user input.
-  // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
-  // 3. Submit the transaction and both signatures
-  const connectedWalletTx = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
-      const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
-        message,
-        sender: senderAddress
-      });
+  const connectedWalletTxBEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+    // Step 1: Request a transaction and sponsorship from the BE
+    console.log("connectedWalletTxBEBuildFESubmit");
+    const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
+      message,
+      sender: senderAddress
+    });
 
-      const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuth).toUint8Array()));
-      const transaction = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.transaction).toUint8Array()));
+    // Step 2: Deserialize the sponsor signature (an AccountAuthenticator) and transaction (a SimpleTransaction)
+    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
 
-      const senderSig = await signTransaction(transaction);
+    // Step 3: Obtain the sender signature over the transaction 
+    const senderSig = await signTransaction(simpleTx);
 
-      return await aptosClient.transaction.submit.simple({
-        transaction: transaction,
-        senderAuthenticator: senderSig,
-        feePayerAuthenticator: sponsorSig,
+    // Step 4: Submit the transaction along with both signatures
+    return await aptosClient.transaction.submit.simple({
+      transaction: simpleTx,
+      senderAuthenticator: senderSig,
+      feePayerAuthenticator: sponsorSig,
     });
   }
+
+
+  const connectedWalletTxFEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+    console.log("connectedWalletTxFEBuildFESubmit");
+    // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
+    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+    const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+
+    // Step 2: Request a BE sponsorship
+    const sponsorshipResp = await axios.post('/sponsorTx', {
+      transaction: simpleTx.bcsToHex().toString() 
+    });
+
+    // Step 3: Deserialize the sponsor signature (an AccountAuthenticator) and feePayerAddress (an AccountAddress)
+    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+    const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.feePayerAddress).toUint8Array()));
+
+    // Step 4: Update the transaction's feePayerAddress with what we got from the BE 
+    //         (this could technically come after signing but before submitting)
+    simpleTx.feePayerAddress = feePayerAddress;
+
+    // Step 5: Obtain the sender signature over the transaction 
+    const senderSig = await signTransaction(simpleTx);
+
+    // Step 4: Submit the transaction along with both signatures
+    return await aptosClient.transaction.submit.simple({
+      transaction: simpleTx,
+      senderAuthenticator: senderSig,
+      feePayerAuthenticator: sponsorSig,
+  });
+}
+
+
+const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+  console.log("connectedWalletTxFEBuildBESubmit");
+  // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
+  const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+  const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+
+  // Step 2: Obtain the sender signature over the transaction 
+  const senderSig = await signTransaction(simpleTx);
+
+  // Step 3: Request that the BE sponsor and submit the transaction.
+  //         Pass the serialized SimpleTransaction and sender AccountAuthenticator
+  const sponsorshipResp = await axios.post('/sponsorAndSubmitTx', {
+    transaction: simpleTx.bcsToHex().toString(),
+    senderAuth: senderSig.bcsToHex().toString()
+  });
+
+  return sponsorshipResp.data.pendingTx;
+}
+
+const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> => {
+  let transaction = await aptosClient.transaction.build.simple({
+      sender: sender,
+      withFeePayer: true,
+      data: {
+        function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+        functionArguments: [new MoveString(message)]
+      },
+      options: {
+          expireTimestamp: expirationSeconds
+      }
+  });
+  return transaction;
+}
 
 
   // Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 

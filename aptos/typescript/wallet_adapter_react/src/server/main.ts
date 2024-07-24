@@ -14,7 +14,10 @@ import {
   Network, 
   AccountAddress, 
   SimpleTransaction,
-  MoveString
+  MoveString,
+  Deserializer,
+  Hex,
+  AccountAuthenticator
 } from "@aptos-labs/ts-sdk";
 
 dotenvFlow.config();
@@ -27,7 +30,7 @@ if (!(ALL_SERVICES_TESTNET_ACCESS_KEY)) {
   throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY .env.local variable not set');
 }
 // Create an Aptos client for building and submitting our transactions.
-const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET}));
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET}));
 
 // Create Shinami clients for sponsoring transactions and for our
 //  Invisible Wallet operations.
@@ -66,18 +69,62 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 });
 
 
-// Build and sponsor a Move call transaction with the given user input.
+
 app.post('/buildAndSponsorTx', async (req, res, next) => {
   try {
-    const message = req.body.message;
-    const senderAddress = req.body.sender;
 
-    const simpleTx : SimpleTransaction = await buildSimpleMoveCallTransaction(senderAddress, message);
+    // Step 1: Build a SimpleTransaction with the values sent from the FE
+    //   Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
+    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+    const simpleTx : SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+
+    // Step 2: Sponsor the transaction
     const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
 
+    // Step 3: Send the serialized SimpleTransaction and sponsor AccountAuthenticator back to the FE
     res.json({
-      sponsorAuth: sponsorAuth.bcsToHex().toString(),
-      transaction: simpleTx.bcsToHex().toString()
+      sponsorAuthenticator: sponsorAuth.bcsToHex().toString(),
+      simpleTx: simpleTx.bcsToHex().toString()
+    });
+  } catch (err) {
+      next(err);
+  }
+});
+
+
+app.post('/sponsorTx', async (req, res, next) => {
+  try {
+    // Step 1: Deserialize the transaction sent from the FE
+    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
+
+    // Step 2: Sponsor the transaction
+    const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
+
+    // Step 3: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE
+    res.json({
+      sponsorAuthenticator: sponsorAuth.bcsToHex().toString(),
+      feePayerAddress: simpleTx.feePayerAddress!.bcsToHex().toString()
+    });
+  } catch (err) {
+      next(err);
+  }
+});
+
+
+// Given a serialized SimpleTransaction and AccountAuthenticator (representing the sender's signature),
+//  sponsor and submit it. Return the associated PendingTransactionResponse
+app.post('/sponsorAndSubmitTx', async (req, res, next) => {
+  try {
+    // Step 1: Deserialize the SimpleTransaction and sender AccountAuthenticator sent from the FE
+    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
+    const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
+
+    // Step 2: Sponsor and submit the transaction
+    const pendingTransaction = await gasClient.sponsorAndSubmitSignedTransaction(simpleTx, senderSig);
+
+    // Step 3: Send the PendingTransactionResponse back to the FE
+    res.json({
+      pendingTx: pendingTransaction
     });
   } catch (err) {
       next(err);
@@ -94,7 +141,7 @@ ViteExpress.listen(app, 3000, () =>
 // Source code for this example Move function:
 // ...
 async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> {
-  let transaction = await aptos.transaction.build.simple({
+  let transaction = await aptosClient.transaction.build.simple({
       sender: sender,
       withFeePayer: true,
       data: {
