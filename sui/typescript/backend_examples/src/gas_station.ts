@@ -37,7 +37,7 @@ console.log("sender address:", SENDER_ADDRESS);
 
 // Values for some of the commented out function calls.
 // Objects must be owned by the sender controlled by the KeyPair.
-const SUI_COIN_TO_DEPOSIT_ID = "{{SUIcoinObjectID}}";
+const SUI_COIN_TO_DEPOSIT_ID = "0x05477ad5f78d4c8b1b9db1449fdbb8ea387762c4f4ed84e8240061d5e7302c10";// "{{SUIcoinObjectID}}";
 const COIN_TO_SPLIT_FROM_ID = "{{SUIcoinObjectID}}";
 const COIN_TO_MERGE_ID =  "{{SUIcoinObjectID}}";
 const OBJ_ID_TO_TRANSFER = "{{objId}}";
@@ -46,9 +46,9 @@ const RECIPIENT_ADDRESS = "{{SuiAddress}}";
 
 // 5. Generate the GaslessTransaction for sponsorship 
 const gaslessTx =  await
-  clockMoveCallGaslessTransaction();
+  // clockMoveCallGaslessTransaction();
   // clockMoveCallGaslessTransactionAlternateVersion();
-  // checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
+   checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
   // splitCoinOwnedByGaslessTransaction(COIN_TO_SPLIT_FROM_ID, SENDER_ADDRESS);
   // mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID);
   // transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, RECIPIENT_ADDRESS);
@@ -136,7 +136,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
   const { balance, inFlight, depositAddress }  = await gasStationClient.getFund();
 
   // Deposit address can be null - see our FAQ for how to generate an address: 
-  //   https://docs.shinami.com/docs/faq
+  //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
   if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_MIST)) {
       // We're not actually checking it's a SUI coin we're transferring, which you should do.
       // We're also going to sponsor this with the gas fund we're depositing to, which only
@@ -147,6 +147,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
       );
   }
 
+  console.log("No deposit because no deposit address or a balance above the minimum you've set.");
   return undefined;
 }
 

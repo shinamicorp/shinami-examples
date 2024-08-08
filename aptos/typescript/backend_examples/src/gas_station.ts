@@ -245,7 +245,7 @@ async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionR
     const STANDARD_DEPOSIT_AMOUNT = 1000; 
     
     // Deposit address can be null - see our FAQ for how to generate an address: 
-    //   https://docs.shinami.com/docs/faq
+    //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
     if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
 
         //  Generate a funded account to act as sender. In a real example,
