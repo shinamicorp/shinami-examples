@@ -51,6 +51,7 @@ const signer = new ShinamiWalletSigner(
 );
 const CREATE_WALLET_IF_NOT_FOUND = true;
 const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+console.log(WALLET_ONE_SUI_ADDRESS.toString());
 
 const app = express();
 app.use(express.json());

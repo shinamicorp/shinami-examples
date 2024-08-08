@@ -52,11 +52,22 @@ function App() {
     let pendingTxResponse = undefined;
     try {
       if (currentAccount) {
-        pendingTxResponse = await connectedWalletTxBEBuildFESubmit(message, currentAccount);
-                            // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+        console.log("Connected wallet sender address: ", currentAccount);
+        const balance = await aptosClient.getAccountAPTAmount({ 
+          accountAddress: AccountAddress.from(currentAccount)
+        });
+        console.log("account balance: ", balance);
+        pendingTxResponse = // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
+                            await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+                            // await connectedWalletTxFEBuildFESubmitNonSponsored(message, currentAccount);
                             // await connectedWalletTxFEBuildBESubmit(message, currentAccount);
       }
       else {
+        console.log("Invisible wallet sender address: 0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934");
+        const balance = await aptosClient.getAccountAPTAmount({ 
+          accountAddress: AccountAddress.from("0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934")
+        });
+        console.log("balance: ", balance);
         pendingTxResponse = await invisibleWalletTx(message);
       }
 
@@ -121,8 +132,24 @@ function App() {
   const connectedWalletTxFEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
     console.log("connectedWalletTxFEBuildFESubmit");
     // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
-    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
-    const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+    // const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+    // const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+
+
+    const simpleTx = await aptosClient.transaction.build.simple({
+      sender: senderAddress,
+      withFeePayer: true,
+      data: {
+          // All transactions on Aptos are implemented via smart contracts.
+          function: "0x1::aptos_account::transfer",
+          functionArguments: ["0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934", 100],
+      },
+  });
+
+    // Step 5: Obtain the sender signature over the transaction 
+    console.log("asking for sender sig");
+    const senderSig = await signTransaction(simpleTx);
+  
 
     // Step 2: Request a BE sponsorship
     const sponsorshipResp = await axios.post('/sponsorTx', {
@@ -133,18 +160,18 @@ function App() {
     const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
     const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.feePayerAddress).toUint8Array()));
 
-    // Step 4: Update the transaction's feePayerAddress with what we got from the BE 
+
+  
+
+    // Step 4: Update the transaction's feePayerAddress with what we got from the BE  
     //         (this could technically come after signing but before submitting)
     simpleTx.feePayerAddress = feePayerAddress;
-
-    // Step 5: Obtain the sender signature over the transaction 
-    const senderSig = await signTransaction(simpleTx);
 
     // Step 4: Submit the transaction along with both signatures
     return await aptosClient.transaction.submit.simple({
       transaction: simpleTx,
       senderAuthenticator: senderSig,
-      feePayerAuthenticator: sponsorSig,
+      feePayerAuthenticator: sponsorSig
   });
 }
 
@@ -153,7 +180,7 @@ const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: 
   console.log("connectedWalletTxFEBuildBESubmit");
   // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
   const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
-  const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+  const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
   // Step 2: Obtain the sender signature over the transaction 
   const senderSig = await signTransaction(simpleTx);
@@ -168,10 +195,32 @@ const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: 
   return sponsorshipResp.data.pendingTx;
 }
 
-const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> => {
-  let transaction = await aptosClient.transaction.build.simple({
+const connectedWalletTxFEBuildFESubmitNonSponsored = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+  console.log("connectedWalletTxFEBuildFESubmitNonSponsored");
+  // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
+  //const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+  // const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, false, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+
+  const transferTx = await aptosClient.transferCoinTransaction({
+    sender: senderAddress,
+    recipient: "0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934",
+    amount: 100
+  })
+
+  // Step 2: Obtain the sender signature over the transaction 
+  const senderSig = await signTransaction(transferTx);
+
+  // Step 3: Submit the transaction along with both signatures
+  return await aptosClient.transaction.submit.simple({
+    transaction: transferTx,
+    senderAuthenticator: senderSig,
+});
+}
+
+const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, hasFeePayer: boolean, expirationSeconds?: number): Promise<SimpleTransaction> => {
+  const transaction = await aptosClient.transaction.build.simple({
       sender: sender,
-      withFeePayer: true,
+      withFeePayer: hasFeePayer,
       data: {
         function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
         functionArguments: [new MoveString(message)]
