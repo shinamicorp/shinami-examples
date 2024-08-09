@@ -64,7 +64,7 @@ console.log("\nTransaction hash:", executedTransaction.hash);
 console.log("Transaction status:", executedTransaction.vm_status);
 
 // 10. (optional) Uncomment the next line to sign a transaction and verify the signature:
-// await signAndVerifyTransaction(signer, simpleTx);
+await signAndVerifyTransaction(signer, simpleTx);
 
 
 
@@ -73,7 +73,8 @@ console.log("Transaction status:", executedTransaction.vm_status);
 
 
 //
-// Build a SimpleTransaction that makes a Move call to a Testnet module.
+// Build a SimpleTransaction with a fee payer. The transaction calls a function 
+//  on a Move module we've deployed to Testnet.
 //
 async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = true): Promise<SimpleTransaction> {
     return await aptosClient.transaction.build.simple({
@@ -93,7 +94,7 @@ async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = 
 async function signSponsorAndSubmitTransactionInTwoSteps(onChainWalletSigner: ShinamiWalletSigner, 
     transaction: SimpleTransaction): Promise<PendingTransactionResponse> {
 
-    // 1. Sign the transaction
+    // 1. Generate the sender signature (from an Invisible Wallet that's been initialized on chain)
     const senderSignature = await onChainWalletSigner.signTransaction(transaction);
 
     // 2. Ask Shinami to sponsor and submit the transaction. 
@@ -106,13 +107,11 @@ async function signSponsorAndSubmitTransactionInTwoSteps(onChainWalletSigner: Sh
 
 //
 // Sign a transaction with an Invisible Wallet and verify the signature.
-//  Note: the Invisible Wallet represented by the signer must be initialized on chain 
-//  in order to sign.
 //
 async function signAndVerifyTransaction(onChainWalletSigner: ShinamiWalletSigner, 
                                                 transaction: SimpleTransaction): Promise<void> {
 
-    // 1. Sign the transaction
+    // 1. Generate the sender signature (from an Invisible Wallet that's been initialized on chain)
     const accountAuthenticator = await onChainWalletSigner.signTransaction(transaction);
 
     // 2. Verify the signature.

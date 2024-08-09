@@ -165,6 +165,49 @@ async function sponsorAndSubmitSignedTransactionMultiAgent(): Promise<PendingTra
 }
 
 
+
+//
+// Check a fund's balance and deposit more APT in the fund if it's low
+//
+async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionResponse | undefined> {
+    const MIN_FUND_BALANCE_OCTA = 1_000_000_000; // 10 APT
+    const { balance, inFlight, depositAddress }  = await gasStationClient.getFund();
+
+    // You'll want to deposit more than 1000 Octa, and what you want may be dynamic based on the
+    //  current (balance - inFlight) amount, etc. This is just a simple example.
+    const STANDARD_DEPOSIT_AMOUNT = 1000; 
+    
+    // Deposit address can be null - see our FAQ for how to generate an address: 
+    //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
+    if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
+
+        //  Generate a funded account to act as sender. In a real example,
+        //  you'd already have a funded account for your app that you'd use.
+        const sender = await generateSingleKeyAccountEd25519(true); 
+
+        // Create a SimpleTransaction that transfers APT from the sender to your Gas Station fund
+        const transferTx = await aptosClient.transferCoinTransaction({
+            sender: sender.accountAddress,
+            recipient: depositAddress,
+            amount: STANDARD_DEPOSIT_AMOUNT
+        });
+
+        // Obtain the sender's signature
+        const senderAuth = sender.signTransactionWithAuthenticator(transferTx);
+
+        // Submit the transaction
+        return await aptosClient.transaction.submit.simple({
+            transaction: transferTx,
+            senderAuthenticator: senderAuth
+        });
+    }
+
+    console.log("No deposit because no deposit address or a balance above the minimum you've set.");
+    return undefined;
+}
+
+
+
 //
 // Helper function to generate a SingleKeyAccount for easy use with this tutorial.
 //  If the argument is set to true, the account will be funded.
@@ -182,8 +225,9 @@ async function generateSingleKeyAccountEd25519(fund = false) : Promise<SingleKey
 }
 
 
-//
-// Build a Move call simple transaction with a fee payer
+// 
+// Build a SimpleTransaction with a fee payer. The transaction calls a function 
+//  on a Move module we've deployed to Testnet.
 //
 async function buildSimpleMoveCallTransaction(sender: AccountAddress, expirationSeconds?: number): Promise<SimpleTransaction> {
 
@@ -229,44 +273,4 @@ async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondar
     console.log("\nResponse from aptos.transaction.build.multiAgent()");
     console.log(transaction);
     return transaction;
-}
-
-
-
-//
-// Check a fund's balance and deposit more SUI in the fund if it's low
-//
-async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionResponse | undefined> {
-    const MIN_FUND_BALANCE_OCTA = 1_000_000_000; // 10 APT
-    const { balance, inFlight, depositAddress }  = await gasStationClient.getFund();
-
-    // You'll want more than 1000 Octa, and what you want may be dynamic based on the
-    //  (balance - inFlight) and other things. This is just an example.
-    const STANDARD_DEPOSIT_AMOUNT = 1000; 
-    
-    // Deposit address can be null - see our FAQ for how to generate an address: 
-    //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
-    if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
-
-        //  Generate a funded account to act as sender. In a real example,
-        //  you'd already have a funded account for your app that you'd use.
-        const sender = await generateSingleKeyAccountEd25519(true); 
-
-
-        const transferTx = await aptosClient.transferCoinTransaction({
-            sender: sender.accountAddress,
-            recipient: depositAddress,
-            amount: STANDARD_DEPOSIT_AMOUNT
-        });
-
-        const senderAuth = await sender.signTransactionWithAuthenticator(transferTx);
-
-        return await aptosClient.transaction.submit.simple({
-            transaction: transferTx,
-            senderAuthenticator: senderAuth
-        });
-    }
-
-    console.log("No deposit because no deposit address or a balance above the minimum you've set.");
-    return undefined;
 }
