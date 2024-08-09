@@ -13,10 +13,14 @@ import {
   AccountAuthenticator,
   Hex,
   MoveString,
-  AccountAddress
+  AccountAddress,
+  APTOS_COIN
 } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { Button } from 'antd';
+
+import { useWallet as pontemUseWallet } from "@manahippo/aptos-wallet-adapter";
 
 // Set up an Aptos client for submitting and fetching transactions
 const aptosConfig = new AptosConfig({ network: Network.TESTNET });
@@ -27,6 +31,32 @@ function App() {
     account,
     signTransaction
   } = useWallet();
+
+
+  const {
+    connect,
+    disconnect,
+    wallets,
+    signAndSubmitTransaction
+  } = pontemUseWallet();
+  const wallet = 'PontemWallet';
+
+  const renderWalletConnectorGroup = () => {
+    return wallets.map((wallet) => {
+      const option = wallet.adapter;
+      return (
+        <Button
+          onClick={() => {
+            connect(option.name);
+          }}
+          id={option.name.split(' ').join('_')}
+          key={option.name}
+          className="connect-btn">
+          {option.name}
+        </Button>
+      );
+    });
+  };
 
   const currentAccount = account?.address;
   const [latestDigest, setLatestDigest] = useState<string>();
@@ -51,14 +81,14 @@ function App() {
 
     let pendingTxResponse = undefined;
     try {
-      if (currentAccount) {
-        console.log("Connected wallet sender address: ", currentAccount);
-        const balance = await aptosClient.getAccountAPTAmount({ 
-          accountAddress: AccountAddress.from(currentAccount)
-        });
-        console.log("account balance: ", balance);
+      if (true) { // currentAccount
+        // console.log("Connected wallet sender address: ", currentAccount);
+        // const balance = await aptosClient.getAccountAPTAmount({ 
+        //   accountAddress: AccountAddress.from(currentAccount)
+        // });
+        // console.log("account balance: ", balance);
         pendingTxResponse = // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
-                            await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+                            await connectedWalletTxFEBuildFESubmit(message);
                             // await connectedWalletTxFEBuildFESubmitNonSponsored(message, currentAccount);
                             // await connectedWalletTxFEBuildBESubmit(message, currentAccount);
       }
@@ -195,17 +225,27 @@ const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: 
   return sponsorshipResp.data.pendingTx;
 }
 
-const connectedWalletTxFEBuildFESubmitNonSponsored = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+const connectedWalletTxFEBuildFESubmitNonSponsored = async (message: string): Promise<PendingTransactionResponse> => {
   console.log("connectedWalletTxFEBuildFESubmitNonSponsored");
   // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
   //const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
   // const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, false, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
   const transferTx = await aptosClient.transferCoinTransaction({
-    sender: senderAddress,
+    sender: "0x782fad34c41f499d243cea3df3870c099d023ac81dc673574a87ad61635355a3",
     recipient: "0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934",
     amount: 100
-  })
+  });
+
+  const transferTxPayload = {
+    type: "entry_function_payload",
+    function: "0x1::aptos_account::transfer_coins",
+    type_arguments: [APTOS_COIN],
+    arguments: ["0x630af550649eeb3a027363c9ea46ec81e8a43b9a3ff5dfb34c60ef8a1199e934", 100],
+    mode: "write"
+  }
+
+  const submittedTx = await signAndSubmitTransaction(transferTxPayload);
 
   // Step 2: Obtain the sender signature over the transaction 
   const senderSig = await signTransaction(transferTx);
@@ -245,7 +285,6 @@ const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: s
 }
 
 
-
   return (
     <>
           <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
@@ -266,6 +305,7 @@ const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: s
       <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
+      <div>{renderWalletConnectorGroup()}</div>
     </>
   );
 };
