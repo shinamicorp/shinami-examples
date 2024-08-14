@@ -100,6 +100,7 @@ app.post('/sponsorTx', async (req, res, next) => {
 
     // Step 2: Sponsor the transaction
     const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
+    console.log("sponsorAuth: ",sponsorAuth);
 
     // Step 3: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE
     res.json({
@@ -117,13 +118,16 @@ app.post('/sponsorTx', async (req, res, next) => {
 app.post('/sponsorAndSubmitTx', async (req, res, next) => {
   try {
     // Step 1: Deserialize the SimpleTransaction and sender AccountAuthenticator sent from the FE
+    console.log("deserlializing the transaction");
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
+    console.log("deserlializing the sender authenticator");
     const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
 
     // Step 2: Sponsor and submit the transaction
     const pendingTransaction = await gasClient.sponsorAndSubmitSignedTransaction(simpleTx, senderSig);
 
     // Step 3: Send the PendingTransactionResponse back to the FE
+    console.log("sending back pendingTx:", pendingTransaction);
     res.json({
       pendingTx: pendingTransaction
     });
