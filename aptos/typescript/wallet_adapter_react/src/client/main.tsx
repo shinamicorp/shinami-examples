@@ -11,7 +11,6 @@ const wallets = [
   new PontemWallet()
 ];
 
-
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
             <AptosWalletAdapterProvider

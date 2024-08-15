@@ -1,26 +1,5 @@
-# Status: WIP
-This is a work in progress branch and not yet meant as a best practice example of using Shinami with @aptos-labs/wallet-adapter-react
-
-# Shinami Sponsored Transaction example with @aptos-labs/wallet-adapter-react
-This is a simple example showing how to:
-1. Collect user input on the frontend that will be used to build a Move call transaction.
-2. Send that data to the backend and construct a feePayer transaction using that data.
-
-and then:
-
-_If there is NOT a connected browser wallet_
-3. Sponsor, sign, and execute that transaction in one request with Shinami's Invisible Wallet API.
-4. Return the result to the frontend.
-
-_Or, if there IS a connected browser wallet_
-3. Sponsor that transaction with Shinami's Gas Station.
-4. Return the sponsored transaction and sponsor signature to the frontend.
-5. Obtain the sender signature from the user via the connected wallet.
-6. Submit the transction with and the sender and feePayer signatures
-
-Finally, on the frontend:
-- Poll an Aptos Full node for the transaction digest. Update the page state with the result of the Move call.
-
+# Shinami Sponsored Transaction examples with @aptos-labs/wallet-adapter-react
+This is a simple example of combining Shinami Gas Station sponsorship on the backend with frontend signing via @aptos-labs/wallet-adapter-react. It also includes a backend Shinami Invisible Wallet sender example that runs when there is no connected wallet. This code is not meant as a template for a production app, but instead as a quick way to show you how you can pass the relevant types between the frontend and backend.
 
 # Setup and running the app
 1. Run `npm install` to install the dependencies

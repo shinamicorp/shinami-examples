@@ -20,27 +20,26 @@ import {
   AccountAuthenticator
 } from "@aptos-labs/ts-sdk";
 
+// Get our environmental variables from our .env.local file
 dotenvFlow.config();
 export const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
 export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
 export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
-
 if (!(ALL_SERVICES_TESTNET_ACCESS_KEY)) {
   throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY .env.local variable not set');
 }
-// Create an Aptos client for building and submitting our transactions.
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET}));
-
-// Create Shinami clients for sponsoring transactions and for our
-//  Invisible Wallet operations.
-const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-
 if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)){
   throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
 }
+
+// Create an Aptos client for building and submitting transactions.
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET}));
+
+// Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
+const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
 // Create our Invisible Wallet 
 const signer = new ShinamiWalletSigner(
@@ -51,30 +50,48 @@ const signer = new ShinamiWalletSigner(
 );
 const CREATE_WALLET_IF_NOT_FOUND = true;
 const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
-console.log(WALLET_ONE_SUI_ADDRESS.toString());
+console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
 
+// initilaize our server
 const app = express();
 app.use(express.json());
 
-// Build and a Move call transaction with the given user intput.
-//Then, sponsor, sign, and execute it for an Invisible Wallet sender.
+ViteExpress.listen(app, 3000, () =>
+  console.log("Server is listening on port 3000..."),
+);
+
+
+
+// Endpoint to:
+//  1. Build and a feePayer SimpleTransaction with the given user intput.
+//  2. Sign, sponsor, and submit it for an Invisible Wallet sender.
+//  3. Return the PendingTransactionResponse to the FE
 app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
-    const message = req.body.message;
-    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, message);
-    const sponsorAndExecuteResp =  await signer.executeGaslessTransaction(simpleTx);
-    res.json(sponsorAndExecuteResp);
+    // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
+    //     Use the SDK's default transaction expiration of 20 seconds since we'll immediately sign and submit.
+    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
+
+    // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
+    const pendingTransaction =  await signer.executeGaslessTransaction(simpleTx);
+
+    // Step 3: return the PendingTransactionResponse to the FE
+    res.json({
+      pendingTx: pendingTransaction
+    });
   } catch (err) {
       next(err);
   }
 });
 
 
-
+// Endpoint to:
+//  1. Build and a feePayer SimpleTransaction call transaction with the given user input.
+//  2. Sponsor the transaction
+//  3. Return the sponsor's signature and the transaction to FE
 app.post('/buildAndSponsorTx', async (req, res, next) => {
   try {
-
-    // Step 1: Build a SimpleTransaction with the values sent from the FE
+    // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
     //   Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
     const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
     const simpleTx : SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
@@ -82,7 +99,7 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
     // Step 2: Sponsor the transaction
     const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
 
-    // Step 3: Send the serialized SimpleTransaction and sponsor AccountAuthenticator back to the FE
+    // Step 3: Send the serialized SimpleTransaction and sponsor (feePayer) AccountAuthenticator back to the FE
     res.json({
       sponsorAuthenticator: sponsorAuth.bcsToHex().toString(),
       simpleTx: simpleTx.bcsToHex().toString()
@@ -93,18 +110,18 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
 });
 
 
+// Endpoint to:
+//  1. Sponsor a feePayer SimpleTransaction built on the FE
+//  2. Return the feePayer's signature and address to FE
 app.post('/sponsorTx', async (req, res, next) => {
   try {
-    // Step 1: Deserialize the transaction sent from the FE
+    // Step 1: Sponsor the transaction sent from the FE (after deserializing it)
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
+    const feePayerSig = await gasClient.sponsorTransaction(simpleTx);
 
-    // Step 2: Sponsor the transaction
-    const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
-    console.log("sponsorAuth: ",sponsorAuth);
-
-    // Step 3: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE
+    // Step 2: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE
     res.json({
-      sponsorAuthenticator: sponsorAuth.bcsToHex().toString(),
+      sponsorAuthenticator: feePayerSig.bcsToHex().toString(),
       feePayerAddress: simpleTx.feePayerAddress!.bcsToHex().toString()
     });
   } catch (err) {
@@ -113,21 +130,19 @@ app.post('/sponsorTx', async (req, res, next) => {
 });
 
 
-// Given a serialized SimpleTransaction and AccountAuthenticator (representing the sender's signature),
-//  sponsor and submit it. Return the associated PendingTransactionResponse
+
+// Endpoint to:
+//  1. Sponsor and submit a SimpleTransaction sent from the FE (given also the sender's signature)
+//  2. Return the PendingTransactionResponse to FE
 app.post('/sponsorAndSubmitTx', async (req, res, next) => {
   try {
-    // Step 1: Deserialize the SimpleTransaction and sender AccountAuthenticator sent from the FE
-    console.log("deserlializing the transaction");
+    // Step 1: Sponsor and submit the transaction
+    //          First, deserialize the SimpleTransaction and sender AccountAuthenticator sent from the FE
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
-    console.log("deserlializing the sender authenticator");
     const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
-
-    // Step 2: Sponsor and submit the transaction
     const pendingTransaction = await gasClient.sponsorAndSubmitSignedTransaction(simpleTx, senderSig);
 
-    // Step 3: Send the PendingTransactionResponse back to the FE
-    console.log("sending back pendingTx:", pendingTransaction);
+    // Step 2: Send the PendingTransactionResponse back to the FE
     res.json({
       pendingTx: pendingTransaction
     });
@@ -137,14 +152,37 @@ app.post('/sponsorAndSubmitTx', async (req, res, next) => {
 });
 
 
-ViteExpress.listen(app, 3000, () =>
-  console.log("Server is listening on port 3000..."),
-);
+
+// Endpoint to:
+//  1. Submit a sponsored SimpleTransaction sent from the FE (given also the sender and feePayer signatures)
+//  2. Return the PendingTransactionResponse to FE
+app.post('/submitSponsoredTx', async (req, res, next) => {
+  try {
+
+    // Step 1: submit the transaction and associated signatures after deserializing them
+    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
+    const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
+    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.sponsorAuth).toUint8Array()));
+
+    const pendingTransaction = await aptosClient.transaction.submit.simple({
+      transaction: simpleTx,
+      senderAuthenticator: senderSig,
+      feePayerAuthenticator: sponsorSig,
+    });
+
+    // Step 2: Send the PendingTransactionResponse back to the FE
+    res.json({
+      pendingTx: pendingTransaction
+    });
+  } catch (err) {
+      next(err);
+  }
+});
 
 
-// Build a SimpleTransaction representing a Move call.
-// Source code for this example Move function:
-// ...
+
+// Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
+// https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
 async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> {
   let transaction = await aptosClient.transaction.build.simple({
       sender: sender,
