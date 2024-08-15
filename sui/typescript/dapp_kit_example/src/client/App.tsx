@@ -54,6 +54,7 @@ function App() {
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
       }
+      console.log(suiTxResponse);
 
       if(suiTxResponse.digest) {
           waitForTxAndUpdateResult(suiTxResponse.digest);
@@ -95,6 +96,7 @@ function App() {
   // 1. Ask the backend to build and sponsor a Move call transction with the given user input.
   // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
   // 3. Ask the backend to execute the signed transaction.
+  // 4. Return the SuiTransactionBlockResponse to the caller.
   const connectedWalletTx = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
       const sponsorshipResp = await axios.post('/buildSponsoredtx', {
         x: x,
@@ -115,9 +117,10 @@ function App() {
   }
 
 
-  // Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
-  // given user input. The sender is the user's Invisible Wallet, which in this example app
-  // is just a hard-coded wallet for simplicity.
+  // 1. Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
+  //    given user input. The sender is the user's Invisible Wallet, which in this example app
+  //    is just a hard-coded wallet for simplicity.
+  // 2. Return the SuiTransactionBlockResponse to the caller.
   const invisibleWalletTx = async (x: number, y: number): Promise<SuiTransactionBlockResponse> => {
       const resp = await axios.post('/invisibleWalletTx', {
         x: x,
