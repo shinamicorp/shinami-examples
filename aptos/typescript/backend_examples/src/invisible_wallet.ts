@@ -5,12 +5,14 @@ import {
     Aptos, 
     AptosConfig, 
     Network, 
+    PendingTransactionResponse, 
     SimpleTransaction 
 } from "@aptos-labs/ts-sdk";
 import { 
     KeyClient, 
     WalletClient, 
-    ShinamiWalletSigner  
+    ShinamiWalletSigner,
+    GasStationClient  
 } from "@shinami/clients/aptos";
 
 // 2. Copy your access key value
@@ -25,6 +27,8 @@ const WALLET_SECRET = "{{walletSecret}}";
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+// Only required for `signSponsorAndSubmitTransactionInTwoSteps` example:
+const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
 // 5. Create a ShinamiWalletSinger to more easily manage the Invisible Wallet
 const signer = new ShinamiWalletSigner(
@@ -45,25 +49,33 @@ const CREATE_WALLET_IF_NOT_FOUND = true;
 const INITIALIZE_ON_CHAIN = true; 
 const walletAddress = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND, INITIALIZE_ON_CHAIN);
 
-// 7. Sponsor and execute a transaction for the Invisible Wallet.
+// 7. Generate a feePayer transaction where an Invisible Wallet is the sender  
 const simpleTx = await simpleMoveCallTransaction(walletAddress); 
-const pendingTx = await signer.executeGaslessTransaction(simpleTx);
 
+// 8. Sign, sponsor, and submit the transaction
+const pendingTx = await signer.executeGaslessTransaction(simpleTx);
+                  // await signSponsorAndSubmitTransactionInTwoSteps(signer, simpleTx)
+
+// 9. Wait for the transaction to execute and print its status 
 const executedTransaction = await aptosClient.waitForTransaction({
     transactionHash: pendingTx.hash
 });
 console.log("\nTransaction hash:", executedTransaction.hash);
 console.log("Transaction status:", executedTransaction.vm_status);
 
-// 8. (optional) Uncomment the next line to sign a transaction and verify the signature:
-// await signAndVerifyTransaction(signer, aptosClient);
+// 10. (optional) Uncomment the next line to sign a transaction and verify the signature:
+await signAndVerifyTransaction(signer, simpleTx);
+
 
 
 /// -- END OF TUTORIAL STEPS -- ///
 
 
 
-// Build a SimpleTransaction that makes a Move call to a Testnet module.
+//
+// Build a SimpleTransaction with a fee payer. The transaction calls a function 
+//  on a Move module we've deployed to Testnet.
+//
 async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = true): Promise<SimpleTransaction> {
     return await aptosClient.transaction.build.simple({
         sender: sender,
@@ -76,20 +88,33 @@ async function simpleMoveCallTransaction(sender: AccountAddress, withFeePayer = 
 }
 
 
+//
+// Sign, sponsor and submit a transaction in two steps.
+//
+async function signSponsorAndSubmitTransactionInTwoSteps(onChainWalletSigner: ShinamiWalletSigner, 
+    transaction: SimpleTransaction): Promise<PendingTransactionResponse> {
 
-// Sign a non-fee-payer transaction with an Invisible Wallet and verify the signature.
-//  Note: the Invisible Wallet represented by the signer must be initialized on chain 
-//  in order to sign.
-async function signAndVerifyTransaction(onChainWalletSigner: ShinamiWalletSigner, aptosClient: Aptos): Promise<void> {
-    // 1. Generate a transaction where an Invisible Wallet is the sender and fee payer. 
-    const walletAddress = await onChainWalletSigner.getAddress();
-    const HAS_FEE_PAYER = false;
-    const transaction = await simpleMoveCallTransaction(walletAddress, HAS_FEE_PAYER);
+    // 1. Generate the sender signature (from an Invisible Wallet that's been initialized on chain)
+    const senderSignature = await onChainWalletSigner.signTransaction(transaction);
 
-    // 2. Sign the transaction
+    // 2. Ask Shinami to sponsor and submit the transaction. 
+    //     You could also break this into two steps with a call to 
+    //     `gasClient.sponsorTransaction()` and then `aptosClient.transaction.submit.simple()`
+    return await gasClient.sponsorAndSubmitSignedTransaction(transaction, senderSignature);
+}
+
+
+
+//
+// Sign a transaction with an Invisible Wallet and verify the signature.
+//
+async function signAndVerifyTransaction(onChainWalletSigner: ShinamiWalletSigner, 
+                                                transaction: SimpleTransaction): Promise<void> {
+
+    // 1. Generate the sender signature (from an Invisible Wallet that's been initialized on chain)
     const accountAuthenticator = await onChainWalletSigner.signTransaction(transaction);
 
-    // 3. Verify the signature.
+    // 2. Verify the signature.
     const signingMessage = aptosClient.getSigningMessage({ transaction });
     const accountAuthenticatorEd25519 = accountAuthenticator as AccountAuthenticatorEd25519;
     const verifyResult = accountAuthenticatorEd25519.public_key.verifySignature(
