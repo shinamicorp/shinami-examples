@@ -56,15 +56,14 @@ function App() {
                             // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
                             // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
                             // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
-      }
-      else {
+      } else {
         pendingTxResponse = await invisibleWalletTx(message);
       }
 
       if(pendingTxResponse?.hash) {
-          waitForTxAndUpdateResult(pendingTxResponse.hash);
+        waitForTxAndUpdateResult(pendingTxResponse.hash);
       } else {
-          console.log("Unable to find a digest returned from the backend.");
+        console.log("Unable to find a digest returned from the backend.");
       }  
   } catch (e) {
     console.log("error: ",e);
@@ -87,9 +86,8 @@ function App() {
           setLatestResult(executedTransaction.events[element].data.to_message);
         }
       }
-        setLatestDigest(txHash);
-        setnewSuccessfulResult(true);
-
+      setLatestDigest(txHash);
+      setnewSuccessfulResult(true);
     } else {
       console.log("Transaction did not execute successfully.");
     }
@@ -183,8 +181,8 @@ function App() {
       transaction: simpleTx,
       senderAuthenticator: senderSig,
       feePayerAuthenticator: sponsorSig
-  });
-}
+   });
+  }
 
 
 
@@ -217,15 +215,15 @@ function App() {
   // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
   const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, hasFeePayer: boolean, expirationSeconds?: number): Promise<SimpleTransaction> => {
     return await aptosClient.transaction.build.simple({
-        sender: sender,
-        withFeePayer: hasFeePayer,
-        data: {
-          function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
-          functionArguments: [new MoveString(message)]
-        },
-        options: {
-            expireTimestamp: expirationSeconds
-        }
+      sender: sender,
+      withFeePayer: hasFeePayer,
+      data: {
+        function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+        functionArguments: [new MoveString(message)]
+      },
+      options: {
+        expireTimestamp: expirationSeconds
+      }
     });
   }
 
@@ -240,21 +238,21 @@ function App() {
       message
     });
     return resp.data.pendingTx;
-}
+  }
 
 
   return (
     <>
-          <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
-          <h3>Set a short message</h3>
-        <form onSubmit={executeTransaction}>
-          <div>
-            <label htmlFor="messageText">Message:</label>
-            <input type="text" name="messageText" id="messageText" required />
-          </div>
-          <button type="submit">Make move call</button>
-        </form>
-        <h3>Transaction result:</h3>
+      <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
+      <h3>Set a short message</h3>
+      <form onSubmit={executeTransaction}>
+        <div>
+          <label htmlFor="messageText">Message:</label>
+          <input type="text" name="messageText" id="messageText" required />
+        </div>
+        <button type="submit">Make move call</button>
+      </form>
+      <h3>Transaction result:</h3>
         {newSuccessfulResult ?
           <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
           :

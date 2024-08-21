@@ -4,6 +4,6 @@ This is a simple example of combining Shinami Gas Station sponsorship on the bac
 # Setup and running the app
 1. Run `npm install` to install the dependencies
 2. Run `cp .env .env.local` to create a local file for your environmental variables (so it won't be committed to github)
-3. In your .env.local file, set the values for your Shinami access key, as well as a walletId and walletSecret for creating a Shinami Invisible Wallet. 
+3. In your .env.local file, uncomment and set the values for your Shinami access key, as well as a walletId and walletSecret for creating a Shinami Invisible Wallet. 
 4. Run `npm run dev` to run the server.  
 5. Visit [localhost](http://localhost:3000/) in your browser to use the app.

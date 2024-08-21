@@ -61,6 +61,12 @@ ViteExpress.listen(app, 3000, () =>
 );
 
 
+//
+// Endpoints
+//
+// NOTE: All of these APIs are UNAUTHENTICATED. You must add your own user auth / session management
+//       to secure them if you use them in an actual production app with real users.
+//
 
 // Endpoint to:
 //  1. Build and a feePayer SimpleTransaction with the given user intput.
@@ -83,6 +89,7 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
       next(err);
   }
 });
+
 
 
 // Endpoint to:
@@ -108,6 +115,7 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
       next(err);
   }
 });
+
 
 
 // Endpoint to:
@@ -158,7 +166,6 @@ app.post('/sponsorAndSubmitTx', async (req, res, next) => {
 //  2. Return the PendingTransactionResponse to FE
 app.post('/submitSponsoredTx', async (req, res, next) => {
   try {
-
     // Step 1: submit the transaction and associated signatures after deserializing them
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
     const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
@@ -180,6 +187,9 @@ app.post('/submitSponsoredTx', async (req, res, next) => {
 });
 
 
+//
+// Helper functions
+// 
 
 // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
 // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
