@@ -42,7 +42,7 @@ const CREATE_WALLET_IF_NOT_FOUND = true;
 const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
 console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
 
-// initilaize our server
+// Initilaize our server
 const app = express();
 app.use(express.json());
 
@@ -51,6 +51,12 @@ ViteExpress.listen(app, 3000, () =>
 );
 
 
+//
+// Endpoints
+//
+// NOTE: All of these APIs are UNAUTHENTICATED. You must add your own user auth / session management
+//       to secure them if you use them in an actual production app with real users.
+//
 
 // Endpoint to: 
 // 1. Build and a Move call transaction with the given user intput
@@ -105,6 +111,11 @@ try {
 }
 });
 
+
+
+//
+// Helper functions
+// 
 
 // Build a GaslessTransaction representing a Move call.
 // Source code for this example Move function:

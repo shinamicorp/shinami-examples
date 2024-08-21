@@ -24,8 +24,8 @@ Finally, on the frontend:
 # Setup and running the app
 1. Run `npm install` to install the dependencies
 2. Run `cp .env .env.local` to create a local file for your environmental variables (so it won't be committed to github)
-3. In your .env.local file, set the values for your Shinami access key, as well as a walletId and walletSecret for creating a Shinami Invisible Wallet. 
-4. Set a value for `NODE_SERVICE_PUBLICLY_VISIBLE_ACCESS_KEY` in `src/config.ts`. This will be a publicy-visible Shinami Node Service
+3. In your .env.local file, uncomment and set values for ALL_SERVICES_TESTNET_ACCESS_KEY, as well as a USER123_WALLET_ID and USER123_WALLET_SECRET for creating a Shinami Invisible Wallet. 
+4. Set a value for `NODE_SERVICE_PUBLICLY_VISIBLE_TESTNET_ACCESS_KEY` in `src/config.ts`. This will be a publicy-visible Shinami Node Service
    API access key used for fetching transaction information on the frontend. Save the change.
 5. Run `pnpm dev` to run the server.  
 6. Visit [localhost](http://localhost:3000/) in your browser to use the app.

@@ -54,12 +54,11 @@ function App() {
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
       }
-      console.log(suiTxResponse);
 
       if(suiTxResponse.digest) {
-          waitForTxAndUpdateResult(suiTxResponse.digest);
+        waitForTxAndUpdateResult(suiTxResponse.digest);
       } else {
-          console.log("Unable to find a digest returned from the backend.");
+        console.log("Unable to find a digest returned from the backend.");
       }  
   } catch (e) {
     console.log(e);
@@ -80,13 +79,11 @@ function App() {
     });
 
     if (finalResult.effects && finalResult.events && finalResult.effects.status.status == "success"){
-        console.log(finalResult.events);
-        const resultObj = finalResult.events[0].parsedJson as AddCallEvent;
-        const result = resultObj.result;
-        setLatestDigest(digest);
-        setLatestResult(result);
-        setnewSuccessfulResult(true);
-
+      const resultObj = finalResult.events[0].parsedJson as AddCallEvent;
+      const result = resultObj.result;
+      setLatestDigest(digest);
+      setLatestResult(result);
+      setnewSuccessfulResult(true);
     } else {
       console.log("Transaction did not execute successfully.");
     }
@@ -98,22 +95,22 @@ function App() {
   // 3. Ask the backend to execute the signed transaction.
   // 4. Return the SuiTransactionBlockResponse to the caller.
   const connectedWalletTx = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
-      const sponsorshipResp = await axios.post('/buildSponsoredtx', {
-        x: x,
-        y: y,
-        sender: senderAddress
-      });
+    const sponsorshipResp = await axios.post('/buildSponsoredtx', {
+      x: x,
+      y: y,
+      sender: senderAddress
+    });
 
-      const { signature } = await signTransaction({
-        transaction: sponsorshipResp.data.txBytes
-      });
+    const { signature } = await signTransaction({
+      transaction: sponsorshipResp.data.txBytes
+    });
 
-      const resp =  await axios.post('/executeSponsoredTx', {
-        tx: sponsorshipResp.data.txBytes,
-        sponsorSig: sponsorshipResp.data.signature,
-        senderSig: signature
-      });
-      return resp.data;
+    const resp =  await axios.post('/executeSponsoredTx', {
+      tx: sponsorshipResp.data.txBytes,
+      sponsorSig: sponsorshipResp.data.signature,
+      senderSig: signature
+    });
+    return resp.data;
   }
 
 
@@ -122,19 +119,19 @@ function App() {
   //    is just a hard-coded wallet for simplicity.
   // 2. Return the SuiTransactionBlockResponse to the caller.
   const invisibleWalletTx = async (x: number, y: number): Promise<SuiTransactionBlockResponse> => {
-      const resp = await axios.post('/invisibleWalletTx', {
-        x: x,
-        y: y,
-        userId: "abc123"
-      });
-      return resp.data;
+    const resp = await axios.post('/invisibleWalletTx', {
+      x: x,
+      y: y,
+      userId: "abc123"
+    });
+    return resp.data;
 }
 
 
 
   return (
     <>
-          <Flex
+      <Flex
         position="sticky"
         px="4"
         py="2"
@@ -145,31 +142,31 @@ function App() {
         </Box>
         <Box>
           <h3>Pick two integers to add in a Move call</h3>
-        <form onSubmit={executeTransaction}>
-          <div>
-            <label htmlFor="integerOne">First integer:</label>
-            <input type="text" name="integerOne" id="integerOne" required />
-          </div>
-          <div>
-            <label htmlFor="integerTwo">Second integer:</label>
-            <input type="text" name="integerTwo" id="integerTwo" required />
-          </div>
-          <button type="submit">Make move call</button>
-        </form>
-      </Box>
-      <Box>
-        <h3>Transaction result:</h3>
-        {newSuccessfulResult ?
-          <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
-          :
-          <label>N/A</label>
-        }
-      </Box>
-      <Box>
-      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
-      <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount.address : "backend Shinami Invisible Wallet"} </label>
-      </Box>
-      <ConnectButton />
+          <form onSubmit={executeTransaction}>
+            <div>
+              <label htmlFor="integerOne">First integer:</label>
+              <input type="text" name="integerOne" id="integerOne" required />
+            </div>
+            <div>
+              <label htmlFor="integerTwo">Second integer:</label>
+              <input type="text" name="integerTwo" id="integerTwo" required />
+            </div>
+            <button type="submit">Make move call</button>
+          </form>
+        </Box>
+        <Box>
+          <h3>Transaction result:</h3>
+          {newSuccessfulResult ?
+            <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+            :
+            <label>N/A</label>
+          }
+        </Box>
+        <Box>
+          <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
+          <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount.address : "backend Shinami Invisible Wallet"} </label>
+        </Box>
+        <ConnectButton />
       </Flex>
     </>
   );
