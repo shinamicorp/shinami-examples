@@ -1,18 +1,18 @@
 import express from "express";
 import ViteExpress from "vite-express";
-import { 
-  GasStationClient, 
+import {
+  GasStationClient,
   WalletClient,
   ShinamiWalletSigner,
   KeyClient
 } from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
-import { 
-  Aptos, 
+import {
+  Aptos,
   AptosConfig,
-  Network, 
-  AccountAddress, 
+  Network,
+  AccountAddress,
   SimpleTransaction,
   MoveString,
   Deserializer,
@@ -29,12 +29,12 @@ export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 if (!(ALL_SERVICES_TESTNET_ACCESS_KEY)) {
   throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY .env.local variable not set');
 }
-if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)){
+if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
   throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
 }
 
 // Create an Aptos client for building and submitting transactions.
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET}));
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
 const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
@@ -79,14 +79,14 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
     const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
 
     // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
-    const pendingTransaction =  await signer.executeGaslessTransaction(simpleTx);
+    const pendingTransaction = await signer.executeGaslessTransaction(simpleTx);
 
     // Step 3: return the PendingTransactionResponse to the FE
     res.json({
       pendingTx: pendingTransaction
     });
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -101,7 +101,7 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
     // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
     //   Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
     const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
-    const simpleTx : SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+    const simpleTx: SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
     // Step 2: Sponsor the transaction
     const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);
@@ -112,7 +112,7 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
       simpleTx: simpleTx.bcsToHex().toString()
     });
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -133,7 +133,7 @@ app.post('/sponsorTx', async (req, res, next) => {
       feePayerAddress: simpleTx.feePayerAddress!.bcsToHex().toString()
     });
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -155,7 +155,7 @@ app.post('/sponsorAndSubmitTx', async (req, res, next) => {
       pendingTx: pendingTransaction
     });
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -182,7 +182,7 @@ app.post('/submitSponsoredTx', async (req, res, next) => {
       pendingTx: pendingTransaction
     });
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -195,15 +195,15 @@ app.post('/submitSponsoredTx', async (req, res, next) => {
 // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
 async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> {
   let transaction = await aptosClient.transaction.build.simple({
-      sender: sender,
-      withFeePayer: true,
-      data: {
-        function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
-        functionArguments: [new MoveString(message)]
-      },
-      options: {
-          expireTimestamp: expirationSeconds
-      }
+    sender: sender,
+    withFeePayer: true,
+    data: {
+      function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+      functionArguments: [new MoveString(message)]
+    },
+    options: {
+      expireTimestamp: expirationSeconds
+    }
   });
   return transaction;
 }

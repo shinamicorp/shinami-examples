@@ -1,5 +1,4 @@
 import "./index.css";
-
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.js";
@@ -13,14 +12,14 @@ const wallets = [
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-            <AptosWalletAdapterProvider
-            plugins={wallets}
-             autoConnect={true}
-             dappConfig={{ network: Network.TESTNET }}
-             onError={(error) => {
-               console.log("error", error);
-             }}>
-            <App />
-            </AptosWalletAdapterProvider>
+    <AptosWalletAdapterProvider
+      plugins={wallets}
+      autoConnect={true}
+      dappConfig={{ network: Network.TESTNET }}
+      onError={(error) => {
+        console.log("error", error);
+      }}>
+      <App />
+    </AptosWalletAdapterProvider>
   </React.StrictMode>,
 );
