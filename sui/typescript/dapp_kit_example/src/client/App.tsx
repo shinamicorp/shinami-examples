@@ -1,7 +1,7 @@
 import "./App.css";
 import { useState } from "react";
-import { 
-  ConnectButton, 
+import {
+  ConnectButton,
   useCurrentAccount,
   useSignTransaction,
   useSuiClient
@@ -9,7 +9,7 @@ import {
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { useShinamiClient }  from "./hooks/useShinamiClient.js";
+import { useShinamiClient } from "./hooks/useShinamiClient.js";
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -22,7 +22,7 @@ function App() {
   const [secondInt, setsecondInt] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
 
-  
+
   type AddCallEvent = {
     result: string;
   };
@@ -37,8 +37,8 @@ function App() {
     setnewSuccessfulResult(false);
     const form = e.currentTarget
     const formElements = form.elements as typeof form.elements & {
-      integerOne: {value: number},
-      integerTwo: {value: number}
+      integerOne: { value: number },
+      integerTwo: { value: number }
     };
 
     const x = formElements.integerOne.value;
@@ -55,14 +55,14 @@ function App() {
         suiTxResponse = await invisibleWalletTx(x, y);
       }
 
-      if(suiTxResponse.digest) {
+      if (suiTxResponse.digest) {
         waitForTxAndUpdateResult(suiTxResponse.digest);
       } else {
         console.log("Unable to find a digest returned from the backend.");
-      }  
-  } catch (e) {
-    console.log(e);
-  }
+      }
+    } catch (e) {
+      console.log(e);
+    }
   }
 
 
@@ -70,7 +70,7 @@ function App() {
   // has been checkpointed and propagated to the node, and the node returns 
   // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
-    const finalResult = await shinamiClient.waitForTransaction({ 
+    const finalResult = await shinamiClient.waitForTransaction({
       digest: digest,
       options: {
         showEffects: true,
@@ -78,7 +78,7 @@ function App() {
       }
     });
 
-    if (finalResult.effects && finalResult.events && finalResult.effects.status.status == "success"){
+    if (finalResult.effects && finalResult.events && finalResult.effects.status.status == "success") {
       const resultObj = finalResult.events[0].parsedJson as AddCallEvent;
       const result = resultObj.result;
       setLatestDigest(digest);
@@ -105,7 +105,7 @@ function App() {
       transaction: sponsorshipResp.data.txBytes
     });
 
-    const resp =  await axios.post('/executeSponsoredTx', {
+    const resp = await axios.post('/executeSponsoredTx', {
       tx: sponsorshipResp.data.txBytes,
       sponsorSig: sponsorshipResp.data.signature,
       senderSig: signature
@@ -125,7 +125,7 @@ function App() {
       userId: "abc123"
     });
     return resp.data;
-}
+  }
 
 
 
@@ -145,11 +145,11 @@ function App() {
           <form onSubmit={executeTransaction}>
             <div>
               <label htmlFor="integerOne">First integer:</label>
-              <input type="text" name="integerOne" id="integerOne" required />
+              <input type="number" name="integerOne" id="integerOne" required />
             </div>
             <div>
               <label htmlFor="integerTwo">Second integer:</label>
-              <input type="text" name="integerTwo" id="integerTwo" required />
+              <input type="number" name="integerTwo" id="integerTwo" required />
             </div>
             <button type="submit">Make move call</button>
           </form>
