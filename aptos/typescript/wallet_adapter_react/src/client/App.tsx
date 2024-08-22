@@ -52,7 +52,8 @@ function App() {
     let pendingTxResponse = undefined;
     try {
       if (currentAccount) {
-        pendingTxResponse = await connectedWalletTxFEBuildBESubmit(message, currentAccount);
+        pendingTxResponse =
+          await connectedWalletTxFEBuildBESubmit(message, currentAccount);
         // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
