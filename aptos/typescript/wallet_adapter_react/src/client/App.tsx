@@ -2,14 +2,14 @@ import "./App.css";
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useState } from "react";
 import axios from 'axios';
-import { 
-  PendingTransactionResponse, 
-  AptosConfig, 
-  Network, 
-  Aptos, 
-  UserTransactionResponse, 
+import {
+  PendingTransactionResponse,
+  AptosConfig,
+  Network,
+  Aptos,
+  UserTransactionResponse,
   SimpleTransaction,
-  Deserializer, 
+  Deserializer,
   AccountAuthenticator,
   Hex,
   MoveString,
@@ -32,7 +32,7 @@ function App() {
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
-  
+
 
   // 1. Get the user's input and update the page state.
   // 2. Build, sponsor, and execute a feePayer SimpleTransaction with the given user input. 
@@ -44,7 +44,7 @@ function App() {
     setnewSuccessfulResult(false);
     const form = e.currentTarget
     const formElements = form.elements as typeof form.elements & {
-      messageText: {value: string}
+      messageText: { value: string }
     };
 
     const message = formElements.messageText.value;
@@ -52,22 +52,22 @@ function App() {
     let pendingTxResponse = undefined;
     try {
       if (currentAccount) {
-        pendingTxResponse =  await connectedWalletTxFEBuildBESubmit(message, currentAccount);
-                            // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
-                            // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
-                            // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+        pendingTxResponse = await connectedWalletTxFEBuildBESubmit(message, currentAccount);
+        // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
+        // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
+        // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
       } else {
         pendingTxResponse = await invisibleWalletTx(message);
       }
 
-      if(pendingTxResponse?.hash) {
+      if (pendingTxResponse?.hash) {
         waitForTxAndUpdateResult(pendingTxResponse.hash);
       } else {
         console.log("Unable to find a digest returned from the backend.");
-      }  
-  } catch (e) {
-    console.log("error: ",e);
-  }
+      }
+    } catch (e) {
+      console.log("error: ", e);
+    }
   }
 
 
@@ -76,11 +76,11 @@ function App() {
   // Upon the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (txHash: string) => {
     console.log("transaction: ", txHash);
-      const executedTransaction = await aptosClient.waitForTransaction({
-        transactionHash: txHash
-      }) as UserTransactionResponse;
+    const executedTransaction = await aptosClient.waitForTransaction({
+      transactionHash: txHash
+    }) as UserTransactionResponse;
 
-    if (executedTransaction.success){
+    if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange") {
           setLatestResult(executedTransaction.events[element].data.to_message);
@@ -166,7 +166,7 @@ function App() {
 
     // Step 3: Request a BE sponsorship
     const sponsorshipResp = await axios.post('/sponsorTx', {
-      transaction: simpleTx.bcsToHex().toString() 
+      transaction: simpleTx.bcsToHex().toString()
     });
 
     // Step 4: Update the transaction's feePayerAddress returned from the BE (after deserializing it)
@@ -181,7 +181,7 @@ function App() {
       transaction: simpleTx,
       senderAuthenticator: senderSig,
       feePayerAuthenticator: sponsorSig
-   });
+    });
   }
 
 
@@ -253,11 +253,11 @@ function App() {
         <button type="submit">Make move call</button>
       </form>
       <h3>Transaction result:</h3>
-        {newSuccessfulResult ?
-          <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
-          :
-          <label>Latest Successful Digest: N/A</label>
-        }
+      {newSuccessfulResult ?
+        <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+        :
+        <label>Latest Successful Digest: N/A</label>
+      }
       <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
