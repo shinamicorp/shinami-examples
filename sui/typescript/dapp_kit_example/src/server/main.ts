@@ -1,7 +1,7 @@
 import express from "express";
 import ViteExpress from "vite-express";
-import { 
-  GasStationClient, 
+import {
+  GasStationClient,
   createSuiClient,
   buildGaslessTransaction,
   WalletClient,
@@ -13,15 +13,15 @@ import dotenvFlow from 'dotenv-flow';
 
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
-export const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
-export const EXAMPLE_MOVE_PACKAGE_ID = process.env.EXAMPLE_MOVE_PACKAGE_ID;
-export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
-export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
+const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
+const EXAMPLE_MOVE_PACKAGE_ID = process.env.EXAMPLE_MOVE_PACKAGE_ID;
+const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
+const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
 if (!(ALL_SERVICES_TESTNET_ACCESS_KEY && EXAMPLE_MOVE_PACKAGE_ID)) {
   throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env.local variables not set');
 }
-if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)){
+if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
   throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
 }
 
@@ -69,7 +69,7 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
     const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
     res.json(sponsorAndExecuteResp);
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -86,10 +86,10 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
     gaslessTx.sender = req.body.sender;
 
     const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
-    
+
     res.json(sponsoredTx);
   } catch (err) {
-      next(err);
+    next(err);
   }
 });
 
@@ -99,16 +99,16 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 // 1. Execute a sponsored transaction, given the transaction and the sender and sponsor signatures.
 // 2. Return the SuiTransactionBlockResponse to the FE
 app.post('/executeSponsoredTx', async (req, res, next) => {
-try {
-  const submitTxResp = await nodeClient.executeTransactionBlock({
-    transactionBlock: req.body.tx,
-    signature: [req.body.senderSig, req.body.sponsorSig]
-  });
+  try {
+    const submitTxResp = await nodeClient.executeTransactionBlock({
+      transactionBlock: req.body.tx,
+      signature: [req.body.senderSig, req.body.sponsorSig]
+    });
 
-  res.json(submitTxResp);
-} catch (err) {
+    res.json(submitTxResp);
+  } catch (err) {
     next(err);
-}
+  }
 });
 
 

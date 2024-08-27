@@ -9,13 +9,12 @@ import {
 import { Box, Flex, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { useShinamiClient } from "./hooks/useShinamiClient.js";
+
 
 function App() {
   const currentAccount = useCurrentAccount();
   const { mutateAsync: signTransaction } = useSignTransaction();
-  const client = useSuiClient();
-  const shinamiClient = useShinamiClient(); // My limited but functional replacement for dapp-kit client component and hook
+  const suiClient = useSuiClient();
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [firstInt, setFirstInt] = useState<string>();
@@ -70,7 +69,7 @@ function App() {
   // has been checkpointed and propagated to the node, and the node returns 
   // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
-    const finalResult = await shinamiClient.waitForTransaction({
+    const finalResult = await suiClient.waitForTransaction({
       digest: digest,
       options: {
         showEffects: true,
