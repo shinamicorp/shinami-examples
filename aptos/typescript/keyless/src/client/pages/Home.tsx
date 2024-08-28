@@ -4,13 +4,15 @@ import { storeEphemeralKeyPair } from "../ephemeral";
 import { getLocalKeylessAccount } from "../keyless";
 import GoogleButton from 'react-google-button';
 
-
 const HomePage = () => {
     const ephemeralKeyPair = EphemeralKeyPair.generate();
     storeEphemeralKeyPair(ephemeralKeyPair);
+    const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    if (!(GOOGLE_CLIENT_ID)) {
+        throw Error('GOOGLE_CLIENT_ID .env.local variable not set');
+    }
 
     const REDIRECT_URI = 'http://localhost:3000/googlecallback';
-    const GOOGLE_CLIENT_ID = '642095664298-a0fpnt3d6aokdsm7t33spn6bgcbbeks3.apps.googleusercontent.com';
     const NONCE = ephemeralKeyPair.nonce;
     const loginUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&scope=openid+email+profile&nonce=${NONCE}&redirect_uri=${REDIRECT_URI}&client_id=${GOOGLE_CLIENT_ID}`;
 
