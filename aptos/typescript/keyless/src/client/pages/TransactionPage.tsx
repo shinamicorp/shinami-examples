@@ -10,10 +10,10 @@ import {
     SimpleTransaction,
     Deserializer,
     AccountAuthenticator,
-    Hex,
-    MoveString,
-    AccountAddress
+    Hex
 } from "@aptos-labs/ts-sdk";
+import { getLocalKeylessAccount } from "../keyless";
+
 
 // Set up an Aptos client for submitting and fetching transactions
 const aptosConfig = new AptosConfig({ network: Network.TESTNET });
@@ -41,11 +41,9 @@ const TransactionPage = () => {
         };
 
         const message = formElements.messageText.value;
-        const keylessAccountAddress = '0x';
-
         let pendingTxResponse = undefined;
         try {
-            pendingTxResponse = await keylessTxBEBuildFESubmit(message, keylessAccountAddress);
+            pendingTxResponse = await keylessTxBEBuildFESubmit(message);
 
             if (pendingTxResponse?.hash) {
                 waitForTxAndUpdateResult(pendingTxResponse.hash);
@@ -82,30 +80,32 @@ const TransactionPage = () => {
 
 
     // 1. Ask the BE to build and sponsor a feePayer SimpleTransaction
-    // 2. Obtain the sender signature over the transaction returned from the BE
-    // 3. Submit the transaction, along with the sender and sponsor (feePayer) signatures. 
-    //     Return the PendingTransactionResponse to the caller
-    const keylessTxBEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse | undefined> => {
+    // 2. Sign and submit the transaction
+    const keylessTxBEBuildFESubmit = async (message: string): Promise<PendingTransactionResponse | undefined> => {
         // Step 1: Request a transaction and sponsorship from the BE
         console.log("keylessTxBEBuildFESubmit");
-        const jwt = "";
+        const keylessAccount = getLocalKeylessAccount();
+        if (keylessAccount) {
+            console.log("We have a pre-existing Keyless account!");
+            const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
+                message,
+                sender: keylessAccount?.accountAddress.toString()
+            });
+            // Step 2: Obtain the sender signature over the transaction after deserializing it
+            const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
+            const senderSig = aptosClient.sign({ signer: keylessAccount, transaction: simpleTx });
+
+            // Step 3: Submit the transaction along with both signatures and return the response to the caller
+            const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+            return await aptosClient.transaction.submit.simple({
+                transaction: simpleTx,
+                senderAuthenticator: senderSig,
+                feePayerAuthenticator: sponsorSig,
+            });
+        } else {
+            console.log("No pre-existing Keyless account found :(");
+        }
         return undefined;
-        // const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
-        //   message,
-        //   sender: senderAddress
-        // });
-
-        // // Step 2: Obtain the sender signature over the transaction after deserializing it
-        // const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
-        // const senderSig = await signTransaction(simpleTx);
-
-        // // Step 3: Submit the transaction along with both signatures and return the response to the caller
-        // const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-        // return await aptosClient.transaction.submit.simple({
-        //   transaction: simpleTx,
-        //   senderAuthenticator: senderSig,
-        //   feePayerAuthenticator: sponsorSig,
-        // });
     }
 
 
