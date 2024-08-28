@@ -80,22 +80,24 @@ const TransactionPage = () => {
 
 
     // 1. Ask the BE to build and sponsor a feePayer SimpleTransaction
-    // 2. Sign and submit the transaction
+    // 2. Sign the transaction with the user's Keyless wallet
+    // 3. Submit the transaction
     const keylessTxBEBuildFESubmit = async (message: string): Promise<PendingTransactionResponse | undefined> => {
-        // Step 1: Request a transaction and sponsorship from the BE
         console.log("keylessTxBEBuildFESubmit");
+
+        // Step 1: Check for a Keyless Account in local storage
         const keylessAccount = getLocalKeylessAccount();
         if (keylessAccount) {
-            console.log("We have a pre-existing Keyless account!");
+            // Step 2: Build and sponsor a transaction on yuour backend
             const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
                 message,
                 sender: keylessAccount?.accountAddress.toString()
             });
-            // Step 2: Obtain the sender signature over the transaction after deserializing it
+            // Step 3: Obtain the sender signature over the transaction after deserializing it
             const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
             const senderSig = aptosClient.sign({ signer: keylessAccount, transaction: simpleTx });
 
-            // Step 3: Submit the transaction along with both signatures and return the response to the caller
+            // Step 4: Submit the transaction along with both signatures and return the response to the caller
             const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
             return await aptosClient.transaction.submit.simple({
                 transaction: simpleTx,

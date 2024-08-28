@@ -7,7 +7,7 @@ import GoogleButton from 'react-google-button';
 const HomePage = () => {
     const ephemeralKeyPair = EphemeralKeyPair.generate();
     storeEphemeralKeyPair(ephemeralKeyPair);
-    const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!(GOOGLE_CLIENT_ID)) {
         throw Error('GOOGLE_CLIENT_ID .env.local variable not set');
     }
