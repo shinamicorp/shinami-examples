@@ -4,26 +4,33 @@ import { storeEphemeralKeyPair } from "../ephemeral";
 import { getLocalKeylessAccount } from "../keyless";
 import GoogleButton from 'react-google-button';
 
+
 const HomePage = () => {
-    const ephemeralKeyPair = EphemeralKeyPair.generate();
-    storeEphemeralKeyPair(ephemeralKeyPair);
+
     const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!(GOOGLE_CLIENT_ID)) {
         throw Error('GOOGLE_CLIENT_ID .env.local variable not set');
     }
 
-    const REDIRECT_URI = 'http://localhost:3000/googlecallback';
-    const NONCE = ephemeralKeyPair.nonce;
-    const loginUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&scope=openid+email+profile&nonce=${NONCE}&redirect_uri=${REDIRECT_URI}&client_id=${GOOGLE_CLIENT_ID}`;
-
     const logInWithGoogle = async () => {
+        const ephemeralKeyPair = EphemeralKeyPair.generate();
+        storeEphemeralKeyPair(ephemeralKeyPair);
+        const NONCE = ephemeralKeyPair.nonce;
+        const REDIRECT_URI = 'http://localhost:3000/googlecallback';
+        const loginUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&scope=openid+email+profile&nonce=${NONCE}&redirect_uri=${REDIRECT_URI}&client_id=${GOOGLE_CLIENT_ID}`;
         window.location.href = loginUrl;
     }
 
     const keylessAccount = getLocalKeylessAccount();
+
     if (keylessAccount) {
         console.log("We have a pre-existing Keyless account!");
-        window.location.href = "/transaction";
+        if (keylessAccount?.ephemeralKeyPair.isExpired()) {
+            console.log("But its keypair is expired. We need to generate a new one");
+        } else {
+            console.log("And the ephemeral keypair has not expired. Changing to the transaction page.");
+            window.location.href = "/transaction";
+        }
     } else {
         console.log("No pre-existing Keyless account found :(");
     }

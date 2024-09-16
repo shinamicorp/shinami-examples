@@ -12,7 +12,8 @@ import {
     AccountAuthenticator,
     Hex
 } from "@aptos-labs/ts-sdk";
-import { getLocalKeylessAccount } from "../keyless";
+import { getLocalKeylessAccount, deleteKeylessAccount } from "../keyless";
+import GoogleLogout from 'react-google-button';
 
 
 // Set up an Aptos client for submitting and fetching transactions
@@ -25,6 +26,7 @@ const TransactionPage = () => {
     const [latestDigest, setLatestDigest] = useState<string>();
     const [latestResult, setLatestResult] = useState<string>();
     const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
+    const [keylessWalletAddress, setkeylessWalletAddress] = useState<string>();
 
 
     // 1. Get the user's input and update the page state.
@@ -88,46 +90,68 @@ const TransactionPage = () => {
         // Step 1: Check for a Keyless Account in local storage
         const keylessAccount = getLocalKeylessAccount();
         if (keylessAccount) {
-            // Step 2: Build and sponsor a transaction on yuour backend
-            const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
-                message,
-                sender: keylessAccount?.accountAddress.toString()
-            });
-            // Step 3: Obtain the sender signature over the transaction after deserializing it
-            const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
-            const senderSig = aptosClient.sign({ signer: keylessAccount, transaction: simpleTx });
+            if (keylessAccount.ephemeralKeyPair.isExpired()) {
+                console.log("The KeylessAccount's ephemeral keypair has expired. Returning you to the homepage to log in.");
+                window.location.href = "/";
+            } else {
+                setkeylessWalletAddress(keylessAccount.accountAddress.toString());
+                // Step 2: Build and sponsor a transaction on yuour backend
+                const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
+                    message,
+                    sender: keylessAccount?.accountAddress.toString()
+                });
+                // Step 3: Obtain the sender signature over the transaction after deserializing it
+                const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
+                const senderSig = aptosClient.sign({ signer: keylessAccount, transaction: simpleTx });
 
-            // Step 4: Submit the transaction along with both signatures and return the response to the caller
-            const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-            return await aptosClient.transaction.submit.simple({
-                transaction: simpleTx,
-                senderAuthenticator: senderSig,
-                feePayerAuthenticator: sponsorSig,
-            });
+                // Step 4: Submit the transaction along with both signatures and return the response to the caller
+                const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+                return await aptosClient.transaction.submit.simple({
+                    transaction: simpleTx,
+                    senderAuthenticator: senderSig,
+                    feePayerAuthenticator: sponsorSig,
+                });
+            }
         } else {
-            console.log("No pre-existing Keyless account found :(");
+            console.log("No pre-existing Keyless account found :(. Returning you to the homepage to log in.");
+            window.location.href = "/";
         }
         return undefined;
     }
 
 
+    const logout = async (): Promise<undefined> => {
+        console.log("Deleting the KeylessAccount from local storage and retunging to the homepage.");
+        deleteKeylessAccount();
+        window.location.href = "/";
+    }
+
     return (
         <>
-            <h1>Shinami Sponsored Transactions with Aptos Keyless</h1>
-            <h3>Set a short message</h3>
-            <form onSubmit={executeTransaction}>
-                <div>
-                    <label htmlFor="messageText">Message:</label>
-                    <input type="text" name="messageText" id="messageText" required />
-                </div>
-                <button type="submit">Make move call</button>
-            </form>
-            <h3>Transaction result:</h3>
-            {newSuccessfulResult ?
-                <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
-                :
-                <label>Latest Successful Digest: N/A</label>
-            }
+            <div>
+                <h1>Shinami Sponsored Transactions with Aptos Keyless</h1>
+                <h3>Your Aptos Keyless wallet address</h3>
+                <p>{keylessWalletAddress}</p>
+                <h3>Set a short message to store on your account. Then click "Make a move call".</h3>
+                <form onSubmit={executeTransaction}>
+                    <div>
+                        <label htmlFor="messageText">Message:</label>
+                        <input type="text" name="messageText" id="messageText" required />
+                    </div>
+                    <button type="submit">Make move call</button>
+                </form>
+                <h3>Transaction result:</h3>
+                {newSuccessfulResult ?
+                    <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+                    :
+                    <label>Latest Successful Digest: N/A</label>
+                }
+                <GoogleLogout
+                    type="dark"
+                    label="Logout"
+                    onClick={() => { logout() }}
+                />
+            </div>
         </>
     );
 };

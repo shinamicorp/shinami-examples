@@ -48,7 +48,7 @@ const GoogleCallbackPage = () => {
     return (
         <>
             <div>
-                <h2>Google callback page</h2>
+                <h2>Generating a zkProof and creating your Keyless Account...</h2>
             </div>
         </>
     );

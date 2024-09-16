@@ -1,7 +1,12 @@
 import { KeylessAccount } from "@aptos-labs/ts-sdk";
 
+const APTOS_ACCOUNT_KEY = "@aptos/account";
+
 export const storeKeylessAccount = (account: KeylessAccount): void =>
-    localStorage.setItem("@aptos/account", encodeKeylessAccount(account));
+    localStorage.setItem(APTOS_ACCOUNT_KEY, encodeKeylessAccount(account));
+
+export const deleteKeylessAccount = (): void =>
+    localStorage.removeItem(APTOS_ACCOUNT_KEY);
 
 export const encodeKeylessAccount = (account: KeylessAccount): string =>
     JSON.stringify(account, (_, e) => {
@@ -15,7 +20,7 @@ export const encodeKeylessAccount = (account: KeylessAccount): string =>
 
 export const getLocalKeylessAccount = (): KeylessAccount | undefined => {
     try {
-        const encodedAccount = localStorage.getItem("@aptos/account");
+        const encodedAccount = localStorage.getItem(APTOS_ACCOUNT_KEY);
         return encodedAccount ? decodeKeylessAccount(encodedAccount) : undefined;
     } catch (error) {
         console.warn(
