@@ -55,8 +55,6 @@ ViteExpress.listen(app, 3000, () =>
 app.post('/buildAndSponsorTx', async (req, res, next) => {
   try {
     // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
-    //   Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
-    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
     const simpleTx: SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
     // Step 2: Sponsor the transaction
@@ -71,28 +69,6 @@ app.post('/buildAndSponsorTx', async (req, res, next) => {
     next(err);
   }
 });
-
-
-
-// Endpoint to:
-//  1. Sponsor a feePayer SimpleTransaction built on the FE
-//  2. Return the feePayer's signature and address to FE
-app.post('/sponsorTx', async (req, res, next) => {
-  try {
-    // Step 1: Sponsor the transaction sent from the FE (after deserializing it)
-    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
-    const feePayerSig = await gasClient.sponsorTransaction(simpleTx);
-
-    // Step 2: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE
-    res.json({
-      sponsorAuthenticator: feePayerSig.bcsToHex().toString(),
-      feePayerAddress: simpleTx.feePayerAddress!.bcsToHex().toString()
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
 
 
 // Endpoint to:
@@ -116,50 +92,19 @@ app.post('/sponsorAndSubmitTx', async (req, res, next) => {
 });
 
 
-
-// Endpoint to:
-//  1. Submit a sponsored SimpleTransaction sent from the FE (given also the sender and feePayer signatures)
-//  2. Return the PendingTransactionResponse to FE
-app.post('/submitSponsoredTx', async (req, res, next) => {
-  try {
-    // Step 1: submit the transaction and associated signatures after deserializing them
-    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(req.body.transaction).toUint8Array()));
-    const senderSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.senderAuth).toUint8Array()));
-    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(req.body.sponsorAuth).toUint8Array()));
-
-    const pendingTransaction = await aptosClient.transaction.submit.simple({
-      transaction: simpleTx,
-      senderAuthenticator: senderSig,
-      feePayerAuthenticator: sponsorSig,
-    });
-
-    // Step 2: Send the PendingTransactionResponse back to the FE
-    res.json({
-      pendingTx: pendingTransaction
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-
 //
 // Helper functions
 // 
 
 // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
 // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
-async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> {
-  let transaction = await aptosClient.transaction.build.simple({
+async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string): Promise<SimpleTransaction> {
+  return await aptosClient.transaction.build.simple({
     sender: sender,
     withFeePayer: true,
     data: {
       function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
       functionArguments: [new MoveString(message)]
-    },
-    options: {
-      expireTimestamp: expirationSeconds
     }
   });
-  return transaction;
 }
