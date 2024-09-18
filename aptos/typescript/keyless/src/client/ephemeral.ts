@@ -1,4 +1,5 @@
 // Code taken from https://aptos.dev/en/build/guides/aptos-keyless/integration-guide
+// deleteEphemeralKeyPair() added
 
 import { EphemeralKeyPair } from '@aptos-labs/ts-sdk';
 
