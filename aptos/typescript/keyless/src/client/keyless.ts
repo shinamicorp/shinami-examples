@@ -1,3 +1,6 @@
+// Code taken from https://aptos.dev/en/build/guides/aptos-keyless/integration-guide
+// deleteKeylessAccount() added
+
 import { KeylessAccount } from "@aptos-labs/ts-sdk";
 
 const APTOS_ACCOUNT_KEY = "@aptos/account";

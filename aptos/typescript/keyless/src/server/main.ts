@@ -17,10 +17,10 @@ import {
 
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
-const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
+const GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY = process.env.GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY;
 
-if (!(ALL_SERVICES_TESTNET_ACCESS_KEY)) {
-  throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY .env.local variable not set');
+if (!(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY)) {
+  throw Error('GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY .env.local variable not set');
 }
 
 
@@ -28,7 +28,7 @@ if (!(ALL_SERVICES_TESTNET_ACCESS_KEY)) {
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
-const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const gasClient = new GasStationClient(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY);
 
 
 // initialize our server
@@ -55,7 +55,7 @@ ViteExpress.listen(app, 3000, () =>
 app.post('/buildAndSponsorTx', async (req, res, next) => {
   try {
     // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
-    const simpleTx: SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+    const simpleTx: SimpleTransaction = await buildSimpleMoveCallTransaction(AccountAddress.from(req.body.sender), req.body.message);
 
     // Step 2: Sponsor the transaction
     const sponsorAuth = await gasClient.sponsorTransaction(simpleTx);

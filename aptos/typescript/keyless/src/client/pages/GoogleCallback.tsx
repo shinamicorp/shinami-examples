@@ -19,10 +19,9 @@ const GoogleCallbackPage = () => {
         storeKeylessAccount(keylessAccount);
         window.location.href = "/transaction";
     }
-
-    // Upon reaching this page when Google responds,
-    // obtain the JWT from the URL.
+    // Upon reaching this page when Google responds, obtain the JWT from the URL.
     const parseJWTFromURL = (url: string): string | null => {
+        console.log("Parsing the JWT from the URL");
         const urlObject = new URL(url);
         const fragment = urlObject.hash.substring(1);
         const params = new URLSearchParams(fragment);
@@ -45,10 +44,10 @@ const GoogleCallbackPage = () => {
         if (!ekp || ekp.nonce !== jwtNonce || ekp.isExpired()) {
             throw new Error("Ephemeral key pair not found or expired");
         }
-
+        console.log("Creating a KeylessAccount");
         createKeylessAccountAndChangePage(jwt, ekp);
     } else {
-        console.log("Could not obtain JWT from URL!");
+        console.log("Could not obtain JWT from URL. Sending the user back to the homepage to try again.");
         window.location.href = "/";
     }
 

@@ -2,26 +2,22 @@ import "../App.css";
 import { useState } from "react"
 import axios from 'axios';
 import {
-    PendingTransactionResponse,
-    AptosConfig,
-    Network,
-    Aptos,
-    UserTransactionResponse,
-    SimpleTransaction,
-    Deserializer,
+    AccountAddress,
     AccountAuthenticator,
+    Aptos,
+    AptosConfig,
+    Deserializer,
     Hex,
     KeylessAccount,
-    AccountAddress,
-    MoveString
+    MoveString,
+    Network,
+    PendingTransactionResponse,
+    SimpleTransaction,
+    UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
 import { getLocalKeylessAccount, deleteKeylessAccount } from "../keyless";
+import { deleteEphemeralKeyPair } from "../ephemeral";
 import GoogleLogout from 'react-google-button';
-
-
-// Set up an Aptos client for submitting and fetching transactions
-const aptosConfig = new AptosConfig({ network: Network.TESTNET });
-const aptosClient = new Aptos(aptosConfig);
 
 
 const TransactionPage = () => {
@@ -34,6 +30,8 @@ const TransactionPage = () => {
     const EVENT_TYPE = "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange";
     const keylessAccount = getLocalKeylessAccount();
 
+    // Set up an Aptos client for submitting and fetching transactions
+    const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
     // 1. Get the user's input and update the page state.
     // 2. Build, sponsor, and execute a feePayer SimpleTransaction with the given user input. 
@@ -45,35 +43,39 @@ const TransactionPage = () => {
         const formElements = form.elements as typeof form.elements & {
             messageText: { value: string }
         };
-
         const message = formElements.messageText.value;
         let pendingTxResponse = undefined;
 
         if (keylessAccount) {
-            setkeylessWalletAddress(keylessAccount.accountAddress.toString());
-            try {
-                pendingTxResponse = await
-                    //keylessTxBEBuildFESubmit(message, keylessAccount);
-                    keylessTxFEBuildBESubmit(message, keylessAccount);
+            if (!keylessAccount.ephemeralKeyPair.isExpired()) {
+                setkeylessWalletAddress(keylessAccount.accountAddress.toString());
+                try {
+                    pendingTxResponse =
+                        // await keylessTxBEBuildFESubmit(message, keylessAccount);
+                        await keylessTxFEBuildBESubmit(message, keylessAccount);
 
-                if (pendingTxResponse?.hash) {
-                    waitForTxAndUpdateResult(pendingTxResponse.hash);
-                } else {
-                    console.log("Unable to find a tx digest to search for.");
+                    if (pendingTxResponse?.hash) {
+                        waitForTxAndUpdateResult(pendingTxResponse.hash);
+                    } else {
+                        console.log("Unable to find a tx digest to search for.");
+                    }
+                } catch (e) {
+                    console.log("error: ", e);
                 }
-            } catch (e) {
-                console.log("error: ", e);
+            } else {
+                console.log("But the ephmeral keypair has expired. Returning user to the homepage to log in.");
+                window.location.href = "/";
             }
         } else {
-            console.log("No pre-existing Keyless account found :(. Returning you to the homepage to log in.");
+            console.log("No pre-existing Keyless account found. Returning user to the homepage to log in.");
             window.location.href = "/";
         }
     }
 
 
-    // Poll the Full node represented by the Aptos client until the given digest
-    // has been propagated to the node, and the node returns results for the digest.
-    // Upon the response, update the page accordingly.
+    // 1. Poll the Full node represented by the Aptos client until the given digest
+    //     has been propagated to the node, and the node returns results for the digest.
+    // 2. Upon the response, update the page accordingly.
     const waitForTxAndUpdateResult = async (txHash: string) => {
         console.log("transaction: ", txHash);
         const executedTransaction = await aptosClient.waitForTransaction({
@@ -93,7 +95,12 @@ const TransactionPage = () => {
         }
     }
 
+
+    // 1. Build a feePayer SimpleTransaction
+    // 2. Sign the transaction with the user's Keyless wallet
+    // 3. Ask the backend to sponsor and submit the transaction
     const keylessTxFEBuildBESubmit = async (message: string, keylessAccount: KeylessAccount): Promise<PendingTransactionResponse> => {
+        console.log("keylessTxFEBuildBESubmit");
         // Step 1. Build a feePayer tx with the user's input
         const simpleTx = await buildSimpleMoveCallTransaction(keylessAccount.accountAddress, message);
 
@@ -108,6 +115,7 @@ const TransactionPage = () => {
 
         return pendingTx.data.pendingTx;
     }
+
 
 
     // 1. Ask the BE to build and sponsor a feePayer SimpleTransaction
@@ -135,6 +143,7 @@ const TransactionPage = () => {
         });
     }
 
+
     // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
     // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
     async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string): Promise<SimpleTransaction> {
@@ -148,17 +157,21 @@ const TransactionPage = () => {
         });
     }
 
+
+    // Delete the user's KeylessAccount and ephemeral keypair and return them to the homepage
     const logout = async (): Promise<undefined> => {
-        console.log("Deleting the KeylessAccount from local storage and retunging to the homepage.");
+        console.log("Deleting the KeylessAccount and ephemeral keypair from local storage and returning the user to the homepage.");
         deleteKeylessAccount();
+        deleteEphemeralKeyPair();
         window.location.href = "/";
     }
+
 
     return (
         <>
             <div>
                 <h1>Shinami Sponsored Transactions with Aptos Keyless</h1>
-                <h3>Your Aptos Keyless wallet address</h3>
+                <h3>Your Aptos Keyless wallet address:</h3>
                 <p>{keylessWalletAddress}</p>
                 <h3>Set a short message to store on your account. Then click "Make a move call".</h3>
                 <form onSubmit={executeTransaction}>
@@ -168,11 +181,11 @@ const TransactionPage = () => {
                     </div>
                     <button type="submit">Make move call</button>
                 </form>
-                <h3>Transaction result:</h3>
+                <h3>Latest Succesful Digest:</h3>
                 {newSuccessfulResult ?
-                    <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+                    <p>{latestDigest} -- String recorded:  "{latestResult}" </p>
                     :
-                    <label>Latest Successful Digest: N/A</label>
+                    <p>N/A</p>
                 }
                 <GoogleLogout
                     type="dark"

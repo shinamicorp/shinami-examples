@@ -1,18 +1,29 @@
+// Code taken from https://aptos.dev/en/build/guides/aptos-keyless/integration-guide
+
 import { EphemeralKeyPair } from '@aptos-labs/ts-sdk';
 
+const APTOS_EKP_KEY = "@aptos/ekp";
 
 /**
  * Store the ephemeral key pair in localStorage.
  */
 export const storeEphemeralKeyPair = (ekp: EphemeralKeyPair): void =>
-    localStorage.setItem("@aptos/ekp", encodeEphemeralKeyPair(ekp));
+    localStorage.setItem(APTOS_EKP_KEY, encodeEphemeralKeyPair(ekp));
+
+/**
+ * 
+ * Delete ephemeral key pair from localStorage. 
+ */
+export const deleteEphemeralKeyPair = (): void =>
+    localStorage.removeItem(APTOS_EKP_KEY);
+
 
 /**
  * Retrieve the ephemeral key pair from localStorage if it exists.
  */
 export const getLocalEphemeralKeyPair = (): EphemeralKeyPair | undefined => {
     try {
-        const encodedEkp = localStorage.getItem("@aptos/ekp");
+        const encodedEkp = localStorage.getItem(APTOS_EKP_KEY);
         return encodedEkp ? decodeEphemeralKeyPair(encodedEkp) : undefined;
     } catch (error) {
         console.warn(
