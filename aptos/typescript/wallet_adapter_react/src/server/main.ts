@@ -4,14 +4,12 @@ import {
   GasStationClient,
   WalletClient,
   ShinamiWalletSigner,
-  KeyClient
+  KeyClient,
+  createAptosClient
 } from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
 import {
-  Aptos,
-  AptosConfig,
-  Network,
   AccountAddress,
   SimpleTransaction,
   MoveString,
@@ -33,13 +31,12 @@ if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
   throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
 }
 
-// Create an Aptos client for building and submitting transactions.
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
-
-// Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
+// Create Shinami clients for sponsoring transactions and for our Invisible Wallet
+//  operations, as well as for building and submitting transactions.
 const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const aptosClient = createAptosClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
 // Create our Invisible Wallet 
 const signer = new ShinamiWalletSigner(

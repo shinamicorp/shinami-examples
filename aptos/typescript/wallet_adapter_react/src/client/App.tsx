@@ -4,9 +4,6 @@ import { useState } from "react";
 import axios from 'axios';
 import {
   PendingTransactionResponse,
-  AptosConfig,
-  Network,
-  Aptos,
   UserTransactionResponse,
   SimpleTransaction,
   Deserializer,
@@ -15,12 +12,17 @@ import {
   MoveString,
   AccountAddress
 } from "@aptos-labs/ts-sdk";
+import { createAptosClient } from "@shinami/clients/aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
-// Set up an Aptos client for submitting and fetching transactions
-const aptosConfig = new AptosConfig({ network: Network.TESTNET });
-const aptosClient = new Aptos(aptosConfig);
+const SHINAMI_APTOS_REST_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_API_KEY;
+if (!(SHINAMI_APTOS_REST_API_KEY)) {
+  throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_API_KEY .env.local variable not set');
+}
+
+// Set up an Aptos client for building, submitting, and fetching transactions
+const aptosClient = createAptosClient(SHINAMI_APTOS_REST_API_KEY);
 
 function App() {
   const {
@@ -32,6 +34,27 @@ function App() {
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
+
+
+
+  const makeQuery = async (): Promise<void> => {
+    const queryResult = await aptosClient.queryIndexer({
+      query: {
+        query: `query accountTransactionQuery {
+      account_transactions(
+        where: { account_address: { _eq: "0x239589c5cfb0cc96f76fa59165a7cbb6ef99ad50d0acc34cf3a2585d861511be" } }
+        order_by: {transaction_version: desc}
+        limit: 1
+      ) {
+        transaction_version
+        __typename
+      }
+    }`
+      }
+    });
+    console.log("queryResp", queryResult);
+  }
+
 
 
   // 1. Get the user's input and update the page state.
@@ -58,6 +81,7 @@ function App() {
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
       } else {
+        makeQuery();
         pendingTxResponse = await invisibleWalletTx(message);
       }
 
