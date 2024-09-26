@@ -4,7 +4,7 @@
     },
     "dependencies": {
         "@aptos-labs/ts-sdk": "^1.28.0",
-        "@shinami/clients": "file:/Users/aarontietz/Desktop/shinami-clients-0.9.4.tgz"
+        "@shinami/clients": "^0.9.4"
     },
     "type": "module"
 }

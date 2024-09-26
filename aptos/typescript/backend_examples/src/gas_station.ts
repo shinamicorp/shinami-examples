@@ -20,11 +20,12 @@ const aptosClient = createAptosClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
 // -- Choose which sample code function to use to generate a PendingTransactionResponse //
 //
 const committedTransaction = await
-    // sponsorTransactionSimple();
-    sponsorTransactionMultiAgent();
+    sponsorTransactionSimple();
+// sponsorTransactionMultiAgent();
 // sponsorAndSubmitSignedTransactionSimple();
 // sponsorAndSubmitSignedTransactionMultiAgent();
 // checkFundBalanceAndDepositIfNeeded();
+
 
 
 // Wait for the transaction to move past the pending state 
@@ -218,11 +219,18 @@ async function generateSingleKeyAccountEd25519(fund = false): Promise<SingleKeyA
     const account: SingleKeyAccount = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
     console.log("privateKey: ", Buffer.from(account.privateKey.toUint8Array()).toString('hex'));
     if (fund) {
-        const fundResp = await aptosClient.fundAccount({
+        const pendingTx = await aptosClient.fundAccount({
             accountAddress: account.accountAddress,
-            amount: 100000000
+            amount: 100000000,
+            options: {
+                waitForIndexer: false
+            }
         });
-        console.log(fundResp);
+        // We wait for the funding transaction to be committed to the chain to make sure that
+        //  our subsequent building and submitting of a transaction can use those funds. We've 
+        //  assumed that the funding attempt was successful, but it may not be. A main reason is
+        //  that there is a faucet rate limit per IP address per day.
+        const fundingTx = await aptosClient.waitForTransaction({ transactionHash: pendingTx.hash });
     }
     return account;
 }
