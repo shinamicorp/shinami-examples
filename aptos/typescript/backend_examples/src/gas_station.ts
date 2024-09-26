@@ -27,7 +27,6 @@ const committedTransaction = await
 // checkFundBalanceAndDepositIfNeeded();
 
 
-
 // Wait for the transaction to move past the pending state 
 if (committedTransaction) {
     console.log("Polling for tx hash: ", committedTransaction.hash);
@@ -77,11 +76,8 @@ async function sponsorTransactionSimple(): Promise<PendingTransactionResponse> {
 async function sponsorTransactionMultiAgent(): Promise<PendingTransactionResponse> {
 
     // 1. Generate two funded accounts to act as sender and secondary signer
-    console.log("generating two funded senders");
     const sender = await generateSingleKeyAccountEd25519(true);
     const secondarySigner = await generateSingleKeyAccountEd25519(true);
-
-    console.log("generating a multiagent transaction");
 
     // 2. Build a multiAgent transaction
     let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress);
