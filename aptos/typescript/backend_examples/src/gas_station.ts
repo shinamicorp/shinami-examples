@@ -213,7 +213,6 @@ async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionR
 //
 async function generateSingleKeyAccountEd25519(fund = false): Promise<SingleKeyAccount> {
     const account: SingleKeyAccount = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
-    console.log("privateKey: ", Buffer.from(account.privateKey.toUint8Array()).toString('hex'));
     if (fund) {
         const pendingTx = await aptosClient.fundAccount({
             accountAddress: account.accountAddress,
