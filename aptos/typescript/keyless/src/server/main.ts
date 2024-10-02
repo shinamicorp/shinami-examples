@@ -15,6 +15,8 @@ import {
   AccountAuthenticator
 } from "@aptos-labs/ts-sdk";
 
+import { createAptosClient } from "@shinami/clients/aptos";
+
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
 const GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY = process.env.GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY;
@@ -25,7 +27,7 @@ if (!(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY)) {
 
 
 // Create an Aptos client for building and submitting transactions.
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
+const aptosClient = createAptosClient(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY);
 
 // Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
 const gasClient = new GasStationClient(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY);
