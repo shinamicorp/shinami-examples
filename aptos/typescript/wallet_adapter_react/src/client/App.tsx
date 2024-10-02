@@ -4,9 +4,6 @@ import { useState } from "react";
 import axios from 'axios';
 import {
   PendingTransactionResponse,
-  AptosConfig,
-  Network,
-  Aptos,
   UserTransactionResponse,
   SimpleTransaction,
   Deserializer,
@@ -15,12 +12,17 @@ import {
   MoveString,
   AccountAddress
 } from "@aptos-labs/ts-sdk";
+import { createAptosClient } from "@shinami/clients/aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
-// Set up an Aptos client for submitting and fetching transactions
-const aptosConfig = new AptosConfig({ network: Network.TESTNET });
-const aptosClient = new Aptos(aptosConfig);
+const SHINAMI_APTOS_REST_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY;
+if (!(SHINAMI_APTOS_REST_API_KEY)) {
+  throw Error('VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY .env.local variable not set');
+}
+
+// Set up an Aptos client for building, submitting, and fetching transactions
+const aptosClient = createAptosClient(SHINAMI_APTOS_REST_API_KEY);
 
 function App() {
   const {
@@ -32,7 +34,6 @@ function App() {
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
-
 
   // 1. Get the user's input and update the page state.
   // 2. Build, sponsor, and execute a feePayer SimpleTransaction with the given user input. 
