@@ -11,7 +11,7 @@ This is a simple example of combining Shinami Gas Station sponsorship on the bac
 7. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 
 
-For a connected wallet transaction, you will always sign on the frontent and sponsor on the backend. To use a different flow for where the transaction is built and where it is submitted, though, you can comment out the `await connectedWalletTxFEBuildBESubmit(message, currentAccount);` in `src/client/App.tsx` and uncomment the version you want, e.g.:
+For a connected wallet transaction, you will always sign on the frontend and sponsor on the backend. To use a different flow for where the transaction is built and where it is submitted, though, you can comment out the `await connectedWalletTxFEBuildBESubmit(message, currentAccount);` in `src/client/App.tsx` and uncomment the version you want, e.g.:
 
         pendingTxResponse = 
         // await connectedWalletTxFEBuildBESubmit(message, currentAccount);
