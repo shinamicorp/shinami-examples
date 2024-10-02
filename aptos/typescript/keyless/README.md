@@ -8,6 +8,7 @@ This code is not meant as a template for a production app, but instead as a quic
 2. Run `cp .env .env.local` to create a local file for your environmental variables (so it won't be committed to github)
 3. In your .env.local file, uncomment and set the value for GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY: your Shinami API access key with rights to Gas Station and Node Service (which you create in your Shinami dashboard: https://app.shinami.com/access-keys)
 4. In your .env.local file, uncomment and set the value for VITE_GOOGLE_CLIENT_ID to your Google OAauth client app id.
+5. In your .env.local file, uncomment and set the value for VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY: your Shinami API access key with rights to Node Service. This is a publicly visible key, which you can protect with a domain allowlist in a production app.
 5. Run `npm run dev` to run the server.  
 6. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 

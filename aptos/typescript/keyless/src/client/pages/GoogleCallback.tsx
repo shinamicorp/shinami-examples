@@ -1,10 +1,18 @@
 import { jwtDecode } from 'jwt-decode';
 import { getLocalEphemeralKeyPair } from "../ephemeral";
-import { Aptos, AptosConfig, Network, EphemeralKeyPair } from '@aptos-labs/ts-sdk';
+import { EphemeralKeyPair } from '@aptos-labs/ts-sdk';
 import { storeKeylessAccount } from "../keyless";
+import { createAptosClient } from "@shinami/clients/aptos";
 
-const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
+// Get our environmental variable from our .env.local file
+const VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY;
+
+if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
+    throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY .env.local variable not set');
+}
+
+const aptosClient = createAptosClient(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY);
 const GoogleCallbackPage = () => {
 
     // Create a Keyless account and store it in local browser storage so 

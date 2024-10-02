@@ -4,13 +4,10 @@ import axios from 'axios';
 import {
     AccountAddress,
     AccountAuthenticator,
-    Aptos,
-    AptosConfig,
     Deserializer,
     Hex,
     KeylessAccount,
     MoveString,
-    Network,
     PendingTransactionResponse,
     SimpleTransaction,
     UserTransactionResponse
@@ -18,7 +15,14 @@ import {
 import { getLocalKeylessAccount, deleteKeylessAccount } from "../keyless";
 import { deleteEphemeralKeyPair } from "../ephemeral";
 import GoogleLogout from 'react-google-button';
+import { createAptosClient } from "@shinami/clients/aptos";
 
+// Get our environmental variable from our .env.local file
+const VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY;
+
+if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
+    throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY .env.local variable not set');
+}
 
 const TransactionPage = () => {
 
@@ -30,8 +34,9 @@ const TransactionPage = () => {
     const EVENT_TYPE = "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange";
     const keylessAccount = getLocalKeylessAccount();
 
-    // Set up an Aptos client for submitting and fetching transactions
-    const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
+    // Create an Aptos client for building, submitting, and fetching transactions.
+    const aptosClient = createAptosClient(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY);
+
 
     // 1. Get the user's input and update the page state.
     // 2. Build, sponsor, and execute a feePayer SimpleTransaction with the given user input. 
@@ -51,7 +56,7 @@ const TransactionPage = () => {
                 setkeylessWalletAddress(keylessAccount.accountAddress.toString());
                 try {
                     pendingTxResponse =
-                        // await keylessTxBEBuildFESubmit(message, keylessAccount);
+                        //    await keylessTxBEBuildFESubmit(message, keylessAccount);
                         await keylessTxFEBuildBESubmit(message, keylessAccount);
 
                     if (pendingTxResponse?.hash) {

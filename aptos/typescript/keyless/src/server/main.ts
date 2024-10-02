@@ -4,9 +4,6 @@ import { GasStationClient } from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
 import {
-  Aptos,
-  AptosConfig,
-  Network,
   AccountAddress,
   SimpleTransaction,
   MoveString,
@@ -17,7 +14,7 @@ import {
 
 import { createAptosClient } from "@shinami/clients/aptos";
 
-// Get our environmental variables from our .env.local file
+// Get our environmental variable from our .env.local file
 dotenvFlow.config();
 const GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY = process.env.GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY;
 
