@@ -1,10 +1,10 @@
 // 1. Import everything we'll need for the rest of the tutorial
-import { 
-  WalletClient, 
-  KeyClient, 
-  createSuiClient, 
+import {
+  WalletClient,
+  KeyClient,
+  createSuiClient,
   GasStationClient,
-  buildGaslessTransaction, 
+  buildGaslessTransaction,
   ShinamiWalletSigner,
   GaslessTransaction
 } from "@shinami/clients/sui";
@@ -46,11 +46,9 @@ const gaslessTx = await buildGaslessTransaction(
 // 8. Choose a sample code method to run
 const txDigest = await
   sponsorSignExecuteInOneRequest(signer, gaslessTx);
-  // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
-  // signAndExecuteANonSponsoredTransaction(signer); // Requires the wallet to own a SUI coin.
-                                                     //  Use the faucet to transfer 1 SUI to it.
+// sponsorSignExecuteInThreeRequests(signer, gaslessTx);
 
-const txInfo = await nodeClient.waitForTransaction({ 
+const txInfo = await nodeClient.waitForTransaction({
   digest: txDigest,
   options: { showEffects: true }
 });
@@ -68,14 +66,10 @@ console.log("status:", txInfo.effects?.status.status);
 
 //  Use The Invisible Wallet API's method to do all the sponsor, sign, and execute 
 //   transaction steps with one call. Returns the associated transaction digest if successful.
-async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner, 
-                                                gaslessTx: GaslessTransaction) : Promise<string> {
+async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner,
+  gaslessTx: GaslessTransaction): Promise<string> {
   const sponsorSignAndExecuteResponse = await signer.executeGaslessTransaction(
     gaslessTx, // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
-    { showEffects: true },
-    "WaitForEffectsCert" 
-    // or use  "WaitForLocalExecution" if you need read-after-write 
-    // consistency for an immediate read after the transaction
   )
   return sponsorSignAndExecuteResponse.digest;
 }
@@ -85,12 +79,12 @@ async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner,
 //  Sponsor, sign, and execute a transaction in three requests. More work, but allows
 //   for more control and flexibility over the process when needed.
 //   Returns the associated transaction digest if successful.
-async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner, 
-                                                  gaslessTx: GaslessTransaction) : Promise<string> {
+async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
+  gaslessTx: GaslessTransaction): Promise<string> {
 
   // 1. Sponsor the GaslessTransaction with a call to Gas Station
-  const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY); 
-  gaslessTx.sender = await signer.getAddress(); 
+  const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+  gaslessTx.sender = await signer.getAddress();
   const sponsoredResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
   );
@@ -104,55 +98,16 @@ async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
   //  `sponsorTransactionBlock` along with the sender's signature 
   const executeSponsoredTxResponse = await nodeClient.executeTransactionBlock({
     transactionBlock: sponsoredResponse.txBytes,
-    signature: [senderSignature.signature, sponsoredResponse.signature],
-    options: { showEffects: true },
-    requestType: "WaitForEffectsCert" 
-    // or use  "WaitForLocalExecution" if you need read-after-write 
-    // consistency for an immediate read after the transaction
+    signature: [senderSignature.signature, sponsoredResponse.signature]
   });
   return executeSponsoredTxResponse.digest;
 }
 
 
 
-//
-//  Sign and execute a non-sponsored transaction.
-//   Returns the associated transaction digest if successful.
-async function signAndExecuteANonSponsoredTransaction(signer: ShinamiWalletSigner) : Promise<string> {
-
-  const GAS_BUDGET = 10_000_000; // 10 Million MIST, or 0.01 SUI
-  const SENDER_ADDRESS = await signer.getAddress();
-
-  // 1. Generate the Move call Transaction
-  const txb = await clockMoveCallTransaction();
-  // 2. Set sender and gas info
-  txb.setSender(SENDER_ADDRESS);
-  txb.setGasBudget(GAS_BUDGET);
-  txb.setGasOwner(SENDER_ADDRESS);
-
-  // 3. Generate the BCS serialized transaction data WITH gas data by 
-  //     setting onlyTransactionKind to false
-  const txBytes = await txb.build({ client: nodeClient, onlyTransactionKind: false});
-  // 4. Sign the transaction (the Invisible Wallet is the sender)
-  const senderSignature = await signer.signTransaction(txBytes);
-
-  // 5. Execute the transaction 
-  const executeNonSponsoredTxResponse = await nodeClient.executeTransactionBlock({
-    transactionBlock: txBytes,
-    signature: [senderSignature.signature],
-    options: { showEffects: true },
-    requestType: "WaitForEffectsCert" 
-    // or use  "WaitForLocalExecution" if you need read-after-write 
-    // consistency for an immediate read after the transaction
-  });
-  return executeNonSponsoredTxResponse.digest;
-}
-
-
-
 // Generate a Transaction already populated with a Move call.
 //  This calls a module we've deployed to Testnet.
-async function clockMoveCallTransaction() : Promise<Transaction> {
+async function clockMoveCallTransaction(): Promise<Transaction> {
   const tx = new Transaction();
   tx.moveCall({
     target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
@@ -166,10 +121,10 @@ async function clockMoveCallTransaction() : Promise<Transaction> {
 //
 //  Sign a personal message from an Invisible Wallet and then verify the signer. 
 //   Returns a boolean representing whether or not the test was successful.
-async function signAndVerifyPersonalMessage(signer: ShinamiWalletSigner) : Promise<boolean> {
+async function signAndVerifyPersonalMessage(signer: ShinamiWalletSigner): Promise<boolean> {
 
   // 1. Encode the message as a Base64 string
-  const message = "I control the private key, haha!"; 
+  const message = "I control the private key, haha!";
   const messageAsBase64String = btoa(message);
 
   // 2. Sign the message with the Invisible Wallet private key
@@ -179,7 +134,7 @@ async function signAndVerifyPersonalMessage(signer: ShinamiWalletSigner) : Promi
 
   // 3. When we check the signature, we encode the message as a byte array
   // and not a Base64 string like when we signed it
-  const messageBytes = new TextEncoder().encode(message); 
+  const messageBytes = new TextEncoder().encode(message);
 
   // 4. Determine whether the signature is valid for the messsage. 
   //    Failure throws an Error with message: `Signature is not valid for the provided message`.
@@ -188,10 +143,10 @@ async function signAndVerifyPersonalMessage(signer: ShinamiWalletSigner) : Promi
 
   // 5. Check whether the signer's address matches the Invisible Wallet's address
   if (publicKey.toSuiAddress() !== await signer.getAddress()) {
-      console.log("\nSignature valid for message, but was signed by a different key pair, :(");
-      return false;
+    console.log("\nSignature valid for message, but was signed by a different key pair, :(");
+    return false;
   } else {
-      console.log("\nSignature was valid and signed by the Invisible Wallet!");
-      return true;
+    console.log("\nSignature was valid and signed by the Invisible Wallet!");
+    return true;
   }
 }
