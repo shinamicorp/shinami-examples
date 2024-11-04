@@ -175,8 +175,8 @@ async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionR
     //  current (balance - inFlight) amount, etc. This is just a simple example.
     const STANDARD_DEPOSIT_AMOUNT = 1000;
 
-    // Deposit address can be null - see our FAQ for how to generate an address: 
-    //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
+    // Deposit address can be null - see our Help Center for how to generate an address: 
+    //   https://docs.shinami.com/docs/aptos-gas-station-faq
     if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
 
         //  Generate a funded account to act as sender. In a real example,
