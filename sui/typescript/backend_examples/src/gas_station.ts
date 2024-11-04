@@ -133,7 +133,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
   const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
 
   // Deposit address can be null - see our Help Center for how to generate an address: 
-  //  https://docs.shinami.com/docs/sui-products-faq#gas-station
+  //  https://docs.shinami.com/docs/sui-gas-station-faq
   if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_MIST)) {
     // We're not actually checking it's a SUI coin we're transferring, which you should do.
     // We're also going to sponsor this with the gas fund we're depositing to, which only
