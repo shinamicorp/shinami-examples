@@ -39,7 +39,7 @@ console.log("Invisible wallet Sui address:", WALLET_ONE_SUI_ADDRESS);
 
 // 7. Generate a GaslessTransaction for sponsorship 
 const gaslessTx = await buildGaslessTransaction(
-  await clockMoveCallTransaction(),
+  await mintSwordTransaction(),
   { sui: nodeClient }
 );
 
@@ -103,6 +103,23 @@ async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
   return executeSponsoredTxResponse.digest;
 }
 
+
+
+// Generate a Transaction for minting an NFT and transferring it to the caller.
+// Uses a package we've deployed on Testnet
+async function mintSwordTransaction(): Promise<Transaction> {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: "0x86841b9e38726ee77e4720861ddb3a4e4518afdcf84a1972b952568ee59ffe70::sword::mint",
+    arguments: [
+      tx.pure.string("Basic sword"), // name
+      tx.pure.string("QmT6RCAd8DJntUT7HGSHYvKSAniSXmMU37hUSRycREj4MV"), // IPFS CID
+      tx.pure.u16(5_000), // attack power
+      tx.pure.u8(80) // remaining durability
+    ]
+  });
+  return tx;
+}
 
 
 // Generate a Transaction already populated with a Move call.
