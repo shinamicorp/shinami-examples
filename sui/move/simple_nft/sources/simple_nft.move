@@ -103,4 +103,20 @@ module simple_nft::sword {
     fun is_valid_attack_power(attack_power: u16): bool {
         attack_power >= 0 && attack_power <= 10_000
     }
+
+    #[test_only]
+    public fun valid_name_test(name: &String): bool {
+        is_valid_name(name)
+    }
+
+    #[test_only]
+    public fun valid_durability_test(remaining_durability: u8): bool {
+        is_valid_durability(remaining_durability)
+    }
+
+    #[test_only]
+    public fun valid_attack_power_test(attack_power: u16): bool {
+        is_valid_attack_power(attack_power)
+    }
+
 }
