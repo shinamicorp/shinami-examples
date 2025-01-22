@@ -5,7 +5,10 @@ import {
     MultiAgentTransaction,
     MoveString,
     SigningSchemeInput,
-    PendingTransactionResponse
+    PendingTransactionResponse,
+    Ed25519PrivateKey,
+    PrivateKey,
+    PrivateKeyVariants
 } from "@aptos-labs/ts-sdk";
 import { readFileSync } from "fs";
 import { GasStationClient, createAptosClient } from "@shinami/clients/aptos";
@@ -16,15 +19,53 @@ const SHINAMI_TESTNET_GAS_AND_REST_API_KEY = "{{APTOS_TESTNET_GAS_STATION_AND_RE
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
 const aptosClient = createAptosClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
 
+// **** 
+// Code for generating two reusable, funded accounts for testing purposes
+
+// Step 1: uncomment the next six lines. Save the file, transpile with tsc, and run with node build/gas_station.js
+// const accountOne = await generateSingleKeyAccountEd25519();
+// console.log("Address 1: ", accountOne.accountAddress.toString());
+// console.log("Private key 1: ", PrivateKey.formatPrivateKey(Buffer.from(accountOne.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
+// const accountTwo = await generateSingleKeyAccountEd25519();
+// console.log("Address 2: ", accountTwo.accountAddress.toString());
+// console.log("Private key 2: ", PrivateKey.formatPrivateKey(Buffer.from(accountTwo.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
+
+// End step 1
+
+// Step 2: visit the Aptos Testnet faucet page at https://aptos.dev/en/network/faucet
+//   and request APT for each of the two addresses that were printed to the console from
+//   step 1. You may need to refresh the page after your first request.
+//   CAUTION: the faucet currently has a limit of 5 requests per day.
+
+
+// Step 3:
+//   a. Comment out the four lines from run 1.
+//   b. Uncomment the eight code lines below.
+//   c. Set the values of `PKEY_ONE` and `PKEY_TWO` to the private key values printed to the console in Step 1.
+//   d. Save the file, transpile with tsc, and run with node build/gas_station.js
+
+// const PKEY_ONE = "ed25519-priv-0x...";
+// const fundedSenderAccount = new SingleKeyAccount({
+//     privateKey: new Ed25519PrivateKey(PKEY_ONE)
+// });
+// const PKEY_TWO = "ed25519-priv-0x...";
+// const fundedSecondarySignerAccount = new SingleKeyAccount({
+//     privateKey: new Ed25519PrivateKey(PKEY_TWO)
+// });
+
+// End step 3
+
+// ****
+
 //
 // -- Choose which sample code function to use to generate a PendingTransactionResponse //
 //
 const committedTransaction = await
     sponsorTransactionSimple();
-// sponsorTransactionMultiAgent();
+// sponsorTransactionMultiAgent(fundedSenderAccount, fundedSecondarySignerAccount);
 // sponsorAndSubmitSignedTransactionSimple();
-// sponsorAndSubmitSignedTransactionMultiAgent();
-// checkFundBalanceAndDepositIfNeeded();
+// sponsorAndSubmitSignedTransactionMultiAgent(fundedSenderAccount, fundedSecondarySignerAccount);
+// checkFundBalanceAndDepositIfNeeded(fundedSenderAccount);
 
 
 // Wait for the transaction to move past the pending state 
@@ -73,32 +114,28 @@ async function sponsorTransactionSimple(): Promise<PendingTransactionResponse> {
 //
 // Build, sponsor, sign, and execute a multiAgent Move script transaction
 //
-async function sponsorTransactionMultiAgent(): Promise<PendingTransactionResponse> {
+async function sponsorTransactionMultiAgent(fundedSenderAccount: SingleKeyAccount, fundedSecondarySigner: SingleKeyAccount): Promise<PendingTransactionResponse> {
 
-    // 1. Generate two funded accounts to act as sender and secondary signer
-    const sender = await generateSingleKeyAccountEd25519(true);
-    const secondarySigner = await generateSingleKeyAccountEd25519(true);
+    // 1. Build a multiAgent transaction
+    let transaction = await buildMultiAgentScriptTransaction(fundedSenderAccount.accountAddress, fundedSecondarySigner.accountAddress);
 
-    // 2. Build a multiAgent transaction
-    let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress);
-
-    // 3. Sponsor the transaction with Shinami Gas Station
+    // 2. Sponsor the transaction with Shinami Gas Station
     let feePayerAuthenticator = await gasStationClient.sponsorTransaction(transaction);
     // Note that the SDK updates the transaction's feePayer address on a successful sponsorship
     console.log("\ntransaction.feePayerAddress post-sponsorship:", transaction.feePayerAddress);
 
-    // 4. Generate the sender and secondary signer signatures
+    // 3. Generate the sender and secondary signer signatures
     const senderAuthenticator = aptosClient.transaction.sign({
-        signer: sender,
+        signer: fundedSenderAccount,
         transaction
     });
 
     const secondarySignerAuthenticator = aptosClient.transaction.sign({
-        signer: secondarySigner,
+        signer: fundedSecondarySigner,
         transaction
     });
 
-    // 5. Submit the transaction with the sender, seconardy signer, and feePayer signatures
+    // 4. Submit the transaction with the sender, seconardy signer, and feePayer signatures
     return await aptosClient.transaction.submit.multiAgent({
         transaction,
         senderAuthenticator,
@@ -135,26 +172,23 @@ async function sponsorAndSubmitSignedTransactionSimple(): Promise<PendingTransac
 //
 // Build, sign, then sponsor and submit a multiAgent transaction
 //
-async function sponsorAndSubmitSignedTransactionMultiAgent(): Promise<PendingTransactionResponse> {
-    // 1. Generate two funded accounts to act as sender and secondary signer
-    const sender = await generateSingleKeyAccountEd25519(true);
-    const secondarySigner = await generateSingleKeyAccountEd25519(true);
+async function sponsorAndSubmitSignedTransactionMultiAgent(fundedSenderAccount: SingleKeyAccount, fundedSecondarySigner: SingleKeyAccount): Promise<PendingTransactionResponse> {
 
-    // 2. Build a multiAgent transaction
-    let transaction = await buildMultiAgentScriptTransaction(sender.accountAddress, secondarySigner.accountAddress);
+    // 1. Build a multiAgent transaction
+    let transaction = await buildMultiAgentScriptTransaction(fundedSenderAccount.accountAddress, fundedSecondarySigner.accountAddress);
 
-    // 3. Generate the sender and secondary signer signatures
+    // 2. Generate the sender and secondary signer signatures
     const senderAuthenticator = aptosClient.transaction.sign({
-        signer: sender,
+        signer: fundedSenderAccount,
         transaction
     });
 
     const secondarySignerAuthenticator = aptosClient.transaction.sign({
-        signer: secondarySigner,
+        signer: fundedSecondarySigner,
         transaction
     });
 
-    // 4. Ask Shinami to sponsor and submit the transaction
+    // 3s. Ask Shinami to sponsor and submit the transaction
     return await gasStationClient.sponsorAndSubmitSignedTransaction(
         transaction,
         senderAuthenticator,
@@ -163,11 +197,10 @@ async function sponsorAndSubmitSignedTransactionMultiAgent(): Promise<PendingTra
 }
 
 
-
 //
 // Check a fund's balance and deposit more APT in the fund if it's low
 //
-async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionResponse | undefined> {
+async function checkFundBalanceAndDepositIfNeeded(fundedSenderAccount: SingleKeyAccount): Promise<PendingTransactionResponse | undefined> {
     const MIN_FUND_BALANCE_OCTA = 1_000_000_000; // 10 APT
     const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
 
@@ -175,23 +208,18 @@ async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionR
     //  current (balance - inFlight) amount, etc. This is just a simple example.
     const STANDARD_DEPOSIT_AMOUNT = 1000;
 
-    // Deposit address can be null - see our FAQ for how to generate an address: 
-    //   https://docs.shinami.com/docs/faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund
+    // Deposit address can be null - see our Help Center for how to generate an address: 
+    //   https://docs.shinami.com/docs/aptos-gas-station-faq
     if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
-
-        //  Generate a funded account to act as sender. In a real example,
-        //  you'd already have a funded account for your app that you'd use.
-        const sender = await generateSingleKeyAccountEd25519(true);
-
         // Create a SimpleTransaction that transfers APT from the sender to your Gas Station fund
         const transferTx = await aptosClient.transferCoinTransaction({
-            sender: sender.accountAddress,
+            sender: fundedSenderAccount.accountAddress,
             recipient: depositAddress,
             amount: STANDARD_DEPOSIT_AMOUNT
         });
 
         // Obtain the sender's signature
-        const senderAuth = sender.signTransactionWithAuthenticator(transferTx);
+        const senderAuth = fundedSenderAccount.signTransactionWithAuthenticator(transferTx);
 
         // Submit the transaction
         return await aptosClient.transaction.submit.simple({
@@ -205,29 +233,12 @@ async function checkFundBalanceAndDepositIfNeeded(): Promise<PendingTransactionR
 }
 
 
-
 //
 // Helper function to generate a SingleKeyAccount for easy use with this tutorial.
-//  If the argument is set to true, the account will be funded.
 //  Not meant as best practice - your app should have its own way of managing Accounts and keys.
 //
-async function generateSingleKeyAccountEd25519(fund = false): Promise<SingleKeyAccount> {
-    const account: SingleKeyAccount = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
-    if (fund) {
-        const pendingTx = await aptosClient.fundAccount({
-            accountAddress: account.accountAddress,
-            amount: 100000000,
-            options: {
-                waitForIndexer: false
-            }
-        });
-        // We wait for the funding transaction to be committed to the chain to make sure that
-        //  our subsequent building and submitting of a transaction can use those funds. We've 
-        //  assumed that the funding attempt was successful, but it may not be. A main reason is
-        //  that there is a faucet rate limit per IP address per day.
-        const fundingTx = await aptosClient.waitForTransaction({ transactionHash: pendingTx.hash });
-    }
-    return account;
+async function generateSingleKeyAccountEd25519(): Promise<SingleKeyAccount> {
+    return SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
 }
 
 

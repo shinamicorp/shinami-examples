@@ -1,5 +1,7 @@
 # Shinami Sponsored Transaction example with dapp-kit
-This is a simple example showing how to:
+This is a simple example showing how to combine Gas Station backend sponsorship with a frontend that collects transaction input - and optionally a signature - from the user. It pairs with our [Frontend signing and backend sponsorship tutorial](https://docs.shinami.com/docs/sui-frontend-signing-with-backend-sponsorship). 
+
+It's not meant as a starter template for a production app. It's just a bare-bones examle that shows how to:
 1. Collect user input on the frontend that will be used to build a Move call transaction.
 2. Send that data to the backend and construct a gasless transaction using that data.
 
