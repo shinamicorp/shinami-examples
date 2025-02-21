@@ -1,9 +1,9 @@
 {
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@mysten/sui": "^1.19.0",
+    "@mysten/sui": "^1.21.2",
     "@shinami/clients": "^0.9.5"
   },
   "type": "module"
