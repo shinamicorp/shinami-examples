@@ -24,12 +24,24 @@ if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
     throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY .env.local variable not set');
 }
 
+const parseAddressFromURL = (url: string): string => {
+    console.log("Parsing the wallet address from the URL");
+    const urlObject = new URL(url);
+    const fragment = urlObject.hash.split("#");
+    if (fragment.length == 2) {
+        return fragment[1];
+    } else {
+        return "Address will be shown after transaction."
+    }
+};
+
 const TransactionPage = () => {
 
     const [latestDigest, setLatestDigest] = useState<string>();
     const [latestResult, setLatestResult] = useState<string>();
     const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
     const [keylessWalletAddress, setkeylessWalletAddress] = useState<string>();
+    const URL_WALLET_ADDRESS = parseAddressFromURL(window.location.href);
 
     const EVENT_TYPE = "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange";
     const keylessAccount = getLocalKeylessAccount();
@@ -177,7 +189,7 @@ const TransactionPage = () => {
             <div>
                 <h1>Shinami Sponsored Transactions with Aptos Keyless</h1>
                 <h3>Your Aptos Keyless wallet address:</h3>
-                <p>{keylessWalletAddress}</p>
+                <p>{keylessWalletAddress ? keylessWalletAddress : URL_WALLET_ADDRESS}</p>
                 <h3>Set a short message to store on your account. Then click "Make a move call".</h3>
                 <form onSubmit={executeTransaction}>
                     <div>

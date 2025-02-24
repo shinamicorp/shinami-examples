@@ -3,7 +3,7 @@ import { getLocalEphemeralKeyPair } from "../ephemeral";
 import { EphemeralKeyPair } from '@aptos-labs/ts-sdk';
 import { storeKeylessAccount } from "../keyless";
 import { createAptosClient } from "@shinami/clients/aptos";
-
+import { useNavigate } from "react-router-dom";
 
 // Get our environmental variable from our .env.local file
 const VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY;
@@ -15,6 +15,8 @@ if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
 const aptosClient = createAptosClient(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY);
 const GoogleCallbackPage = () => {
 
+    const navigate = useNavigate();
+
     // Create a Keyless account and store it in local browser storage so 
     //  that when the user returns to the site it can be used again (as long
     //  as the ephmemeral keypair hasn't expired).
@@ -25,7 +27,10 @@ const GoogleCallbackPage = () => {
         });
         console.log("Storing a KeylessAccount for the user.");
         storeKeylessAccount(keylessAccount);
-        window.location.href = "/transaction";
+        // Navigate the the TransactionPage and pass the wallet address
+        //  in the URL so that it can be diplayed to the user.
+        const walletAddress = keylessAccount.accountAddress.toString();
+        window.location.href = `/transaction#${walletAddress}`;
     }
     // Upon reaching this page when Google responds, obtain the JWT from the URL.
     const parseJWTFromURL = (url: string): string | null => {
@@ -62,7 +67,7 @@ const GoogleCallbackPage = () => {
     return (
         <>
             <div>
-                <h2>Generating a zkProof and creating your Keyless Account...</h2>
+                <h2>Creating or fetching your Keyless account and generating a zkProof for transaction signing...</h2>
             </div>
         </>
     );

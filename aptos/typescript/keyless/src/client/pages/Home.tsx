@@ -15,7 +15,10 @@ const HomePage = () => {
             console.log("But its keypair is expired. We need to generate a new one. The user will need to log in with Google.");
         } else {
             console.log("And the ephemeral keypair has not expired. Moving the user to the transaction page.");
-            window.location.href = "/transaction";
+            // Navigate the the TransactionPage and pass the wallet address
+            //  in the URL so that it can be diplayed to the user.
+            const walletAddress = keylessAccount.accountAddress.toString();
+            window.location.href = `/transaction#${walletAddress}`;
         }
     } else {
         console.log("No pre-existing Keyless account found. The user will need to log in with Google.");
