@@ -54,10 +54,10 @@ function App() {
     try {
       if (currentAccount) {
         pendingTxResponse =
-          await connectedWalletTxFEBuildBESubmit(message, currentAccount);
-        // await connectedWalletTxBEBuildFESubmit(message, currentAccount);
-        // await connectedWalletTxBEBuildBESubmit(message, currentAccount);
-        // await connectedWalletTxFEBuildFESubmit(message, currentAccount);
+          await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
+        //  await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
+        // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
+        // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
         pendingTxResponse = await invisibleWalletTx(message);
       }
@@ -110,13 +110,13 @@ function App() {
 
     // Step 2: Obtain the sender signature over the transaction after deserializing it
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
-    const senderSig = await signTransaction(simpleTx);
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
     // Step 3: Submit the transaction along with both signatures and return the response to the caller
     const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
     return await aptosClient.transaction.submit.simple({
       transaction: simpleTx,
-      senderAuthenticator: senderSig,
+      senderAuthenticator: senderSig.authenticator,
       feePayerAuthenticator: sponsorSig,
     });
   }
@@ -137,14 +137,14 @@ function App() {
 
     // Step 2: Obtain the sender signature over the transaction after deserializing it
     const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
-    const senderSig = await signTransaction(simpleTx);
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
     // Step 3: Ask the backend to submit the transaction along with the signatures
     //         and return the response to the caller.
     const txSubmission = await axios.post('/submitSponsoredTx', {
       transaction: sponsorshipResp.data.simpleTx,
       sponsorAuth: sponsorshipResp.data.sponsorAuthenticator,
-      senderAuth: senderSig.bcsToHex().toString()
+      senderAuth: senderSig.authenticator.bcsToHex().toString()
     });
 
     return txSubmission.data.pendingTx;
@@ -164,7 +164,7 @@ function App() {
     const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
     // Step 2: Obtain the sender signature over the transaction 
-    const senderSig = await signTransaction(simpleTx);
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
     // Step 3: Request a BE sponsorship
     const sponsorshipResp = await axios.post('/sponsorTx', {
@@ -181,7 +181,7 @@ function App() {
     const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
     return await aptosClient.transaction.submit.simple({
       transaction: simpleTx,
-      senderAuthenticator: senderSig,
+      senderAuthenticator: senderSig.authenticator,
       feePayerAuthenticator: sponsorSig
     });
   }
@@ -200,13 +200,13 @@ function App() {
     const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
     // Step 2: Obtain the sender signature over the transaction 
-    const senderSig = await signTransaction(simpleTx);
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
     // Step 3: Request that the BE sponsor and submit the transaction and return the 
     //          PendingTransactionResponse in the response to the caller
     const sponsorSubmitResp = await axios.post('/sponsorAndSubmitTx', {
       transaction: simpleTx.bcsToHex().toString(),
-      senderAuth: senderSig.bcsToHex().toString()
+      senderAuth: senderSig.authenticator.bcsToHex().toString()
     });
     return sponsorSubmitResp.data.pendingTx;
   }

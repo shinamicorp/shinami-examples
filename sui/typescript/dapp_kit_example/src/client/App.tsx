@@ -6,7 +6,7 @@ import {
   useSignTransaction,
   useSuiClient
 } from "@mysten/dapp-kit";
-import { Box, Flex, Heading } from "@radix-ui/themes";
+import { Box, Container, Flex, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 
@@ -129,43 +129,38 @@ function App() {
 
   return (
     <>
-      <Flex
-        position="sticky"
-        px="4"
-        py="2"
-        justify="between"
-      >
-        <Box>
-          <Heading>Shinami Sponsored Transactions with dApp Kit</Heading>
-        </Box>
-        <Box>
-          <h3>Pick two integers to add in a Move call</h3>
-          <form onSubmit={executeTransaction}>
-            <div>
-              <label htmlFor="integerOne">First integer:</label>
-              <input type="number" name="integerOne" id="integerOne" required />
-            </div>
-            <div>
-              <label htmlFor="integerTwo">Second integer:</label>
-              <input type="number" name="integerTwo" id="integerTwo" required />
-            </div>
-            <button type="submit">Make move call</button>
-          </form>
-        </Box>
-        <Box>
-          <h3>Transaction result:</h3>
-          {newSuccessfulResult ?
-            <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
-            :
-            <label>N/A</label>
-          }
-        </Box>
-        <Box>
-          <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
-          <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount.address : "backend Shinami Invisible Wallet"} </label>
-        </Box>
+      <Box>
+        <Heading>Shinami Gas Station + dApp Kit</Heading>
+      </Box>
+      <Box>
+        <h3>Pick two integers to add in a Move call</h3>
+        <form onSubmit={executeTransaction}>
+          <div>
+            <label htmlFor="integerOne">First integer:</label>
+            <input type="number" name="integerOne" id="integerOne" required />
+          </div>
+          <div>
+            <label htmlFor="integerTwo">Second integer:</label>
+            <input type="number" name="integerTwo" id="integerTwo" required />
+          </div>
+          <button type="submit">Make move call</button>
+        </form>
+      </Box>
+      <Box>
+        <h3>Transaction result:</h3>
+        {newSuccessfulResult ?
+          <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+          :
+          <label>N/A</label>
+        }
+      </Box>
+      <Box>
+        <h3>Connect a wallet. Otherwise use a backend Shinami Invisible Wallet.</h3>
+        <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount.address : "backend Shinami Invisible Wallet"} </label>
+      </Box>
+      <Box>
         <ConnectButton />
-      </Flex>
+      </Box>
     </>
   );
 };

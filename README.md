@@ -1,10 +1,10 @@
 # Shinami Service Examples
-Code examples for using Shinami's Services.
+Code examples for using Shinami's Services. Pairs with the [tutorials on our docs site](https://docs.shinami.com/docs/guides-overview#integrate-a-product).
 
-Aptos
-- [Backend-only examples](https://github.com/shinamicorp/shinami-examples/tree/main/aptos/typescript/backend_examples) for using Shinami's Gas Station and Invisible Wallets (TypeScript)
-- [Simple app example](https://github.com/shinamicorp/shinami-examples/tree/main/aptos/typescript/wallet_adapter_react) combining Shinami Gas Station sponsorship on the backend with connected wallet signing on the frontend (using the Aptos and Shinami TypeScript SDKs and `@aptos-labs/wallet-adapter-react` in a React frontend).
+## Aptos services sample code
+- [Backend-only examples](https://github.com/shinamicorp/shinami-examples/tree/main/aptos/typescript/backend_examples) for using Shinami's Gas Station for feePayer transaction gas fee sponsorship and Invisible Wallets (embedded, NFT wallets for your Web2-native users).  Uses the [`@aptos-labs/ts-sdk`](https://www.npmjs.com/package/@aptos-labs/ts-sdk) and [`@shinami/clients`](https://www.npmjs.com/package/@shinami/clients) TypeScript SDKs.
+- [Simple app example](https://github.com/shinamicorp/shinami-examples/tree/main/aptos/typescript/wallet_adapter_react) combining Shinami Gas Station for feePayer transaction gas fee sponsorship on the backend with connected wallet signing on a React frontend. Uses the [`@aptos-labs/ts-sdk`](https://www.npmjs.com/package/@aptos-labs/ts-sdk), [`@aptos-labs/wallet-adapter-react`](https://www.npmjs.com/package/@aptos-labs/wallet-adapter-react), and [`@shinami/clients`](https://www.npmjs.com/package/@shinami/clients) TypeScript SDKs.
 
-Sui
-- [Backend-only examples](https://github.com/shinamicorp/shinami-examples/tree/main/sui/typescript/backend_examples) for using Shinami's Gas Station and Invisible Wallets (using the Mysten and Shinami TypeScript SDKs)
-- [Simple app example](https://github.com/shinamicorp/shinami-examples/tree/main/sui/typescript/dapp_kit_example) combining Shinami Gas Station sponsorship on the backend with connected wallet signing on the frontend (using the Mysten and Shinami TypeScript SDKs and `@mysten/dapp-kit` in a React frontend).
+## Sui services sample code
+- [Backend-only examples](https://github.com/shinamicorp/shinami-examples/tree/main/sui/typescript/backend_examples) for using Shinami's Gas Station for transaction gas fee sponsorship and Invisible Wallets (embedded NFT wallets for your Web2-native users). Uses the [`@mysten/sui`](https://www.npmjs.com/package/@mysten/sui) and [`@shinami/clients`](https://www.npmjs.com/package/@shinami/clients) TypeScript SDKs.
+- [Simple app example](https://github.com/shinamicorp/shinami-examples/tree/main/sui/typescript/dapp_kit_example) combining Shinami Gas Station sponsorship on the backend with connected wallet signing on a React frontend. Uses the [`@mysten/sui`](https://www.npmjs.com/package/@mysten/sui), [`@mysten/dapp-kit`](https://www.npmjs.com/package/@mysten/dapp-kit), and [`@shinami/clients`](https://www.npmjs.com/package/@shinami/clients)`@shinami/clients` TypeScript SDKs.
