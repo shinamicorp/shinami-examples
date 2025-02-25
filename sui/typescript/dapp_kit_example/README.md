@@ -2,8 +2,8 @@
 This is a simple example showing how to combine Gas Station backend sponsorship with a frontend that collects transaction input - and optionally a signature - from the user. We provide this example because our Gas Station does not support CORS (browser) requests for security reasons, so you need to pair backend Gas Station requests with your browser-based frontend. It pairs with our [Frontend signing and backend sponsorship tutorial](https://docs.shinami.com/docs/sui-frontend-signing-with-backend-sponsorship). 
 
 It's not meant as a starter template for a production app. It's just a bare-bones examle that shows how to:
-1. FE: Collect user input that will be used to build a Move call transaction.
-2. FE: Send that data to the backend and construct a gasless transaction using that data.
+1. FE: Collect user input that will be used to build a Move call transaction and send that data to the backend.
+2. BE: Construct a gasless transaction using the data.
 
 and then:
 
@@ -15,11 +15,11 @@ _Or, if there IS a connected browser wallet_
 4. BE: Sponsor that transaction with Shinami's Gas Station.
 5. BE: Return the sponsored transaction and sponsor signature to the frontend.
 6. FE: Obtain the sender signature from the user via the dapp-kit connection to their connected wallet.
-7. BE: Send the sender signature, along with the sponsored transaction and sponsor signature, to the backend. 
+7. FE: Send the sender signature, along with the sponsored transaction and sponsor signature, to the backend. 
 8. BE: Execute the transaction using Shinami's Node Service. Return the result to the frontend.
 
 And the last step in both cases:
-- FE: Poll a Sui Full node for information about the transaction digest returned from the backend. Upon response from the Full node, update the page state with the result of the Move call.
+- FE: Poll a Sui Full node for information about the transaction digest returned from the backend. Upon successful response from the Full node, update the page state with the result of the Move call.
 
 
 # Setup and running the app

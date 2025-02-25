@@ -1,9 +1,3 @@
-# Typescript Examples
-Code examples for using Shinami's Gas Station and Invisible Wallet APIs. Accompanying tutorials can be found on our website: 
-- [Gas Station tutorial](https://docs.shinami.com/docs/sponsored-transaction-typescript-tutorial)
-- [Invisible Wallet tutorial](https://docs.shinami.com/docs/invisible-wallet-typescript-tutorial)
-
-
 # Code examples (TypeScript)
 Examples to show you how to use Shinami's Gas Station and Wallet Services APIs. Accompanying tutorials can be found on [our docs website](https://docs.shinami.com/docs/guides-overview#integrate-a-product) and are linked below. 
 
