@@ -49,6 +49,7 @@ console.log("Invisible Wallet Sui address:", WALLET_ONE_SUI_ADDRESS);
 //     be a Testnet SUI coin from the faucet, an NFT from our demo: https://demo.shinami.com/ , etc.
 const OBJECT_TO_TRANSFER_ID = "{{objectID}}";
 // 7b. Check the object version pre-transaction.
+console.log("following object id: ", OBJECT_TO_TRANSFER_ID);
 const objInfo = await shinamiNodeClient.getObject({ id: OBJECT_TO_TRANSFER_ID });
 if (objInfo.data) {
   console.log("\nThe object version before the transaction:                              ", objInfo.data.version);
@@ -93,15 +94,15 @@ try {
   console.log(e);
 }
 
-// 11. If all you need to do is display information, you can use the data returned 
-//  in the SuiTransactionBlockResponse, e.g. balance changes:
+// 11. If all you need to do is display information from the transaction's changes, you 
+//   can use the data returned in the SuiTransactionBlockResponse, e.g. balance changes:
 console.log("Balance changes post-execution:\n", sponsorSignAndExecuteTxResponse.balanceChanges);
 
 
-// 12. If you want to send a transction with the same owned object, you can poll the Full node until 
-//   it has recieved and processed the transaction digest and then build a new transaction
+// 12a. If you want to send a transaction with the same owned object, or make a read that
+//      reflects the transaction's effects, however, you have to first poll a Full node 
+//      until it has received and processed the transaction
 //
-// Ask Shinami
 const shinamiData = await shinamiNodeClient.waitForTransaction({
   digest: sponsorSignAndExecuteTxResponse.digest,
   options: { showObjectChanges: true }
@@ -111,22 +112,28 @@ if (updatedObjInfo) {
   console.log("Shinami node object version after waiting for transaction propagation:  ", updatedObjInfo.version);
 }
 
-// Ask Mysten
-const mystenData = await mystenClient.waitForTransaction({
-  digest: sponsorSignAndExecuteTxResponse.digest,
-  options: { showObjectChanges: true }
-});
-updatedObjInfo = await parseTxResponse(mystenData, false);
-if (updatedObjInfo) {
-  console.log(" Mysten node object version after waiting for transaction propagation:  ", updatedObjInfo.version);
-}
+// 12b. Then, you make a request to the same node using Shinami sticky-routing. This is where 
+//  we route requests from the same (IP address, API key) pair to the same full node 
+//  behind our node service (since we run multiple nodes to provide great uptime). Sticky-routing 
+//  guarantees that the same node that responded to our `waitForTransaction` request 
+//  is the same one that we then use to read from (since we're using the same API key and IP address). 
+//  This guarantees to us that the effects of the transaction we waited for are reflected in our reads.
+// For more on sticky-routing, see 
+//   https://docs.shinami.com/docs/authentication-and-api-keys#node-service-sticky-routing
 
-// And then you can build a transaction, which makes requests to the Fullnode to get object and other info.
+// Example 1: you can now make a read knowing that the transaction's effects will be reflected.
+const walletContents = await shinamiNodeClient.getOwnedObjects({
+  owner: WALLET_ONE_SUI_ADDRESS
+});
+console.log("getOwnedObjectsResponse for sender's wallet\n", walletContents.data);
+
+// Example 2: you can now build a transaction, which makes requests to the Fullnode to get object and other info.
 //  (Transaction.build() is called within 'buildGaslessTransaction' function call inside 'buildAndSubmitGaslessTx'.)
 tx = new Transaction();
 tx.transferObjects([tx.object(OBJECT_TO_TRANSFER_ID)], tx.pure(bcs.Address.serialize(WALLET_ONE_SUI_ADDRESS)));
 sponsorSignAndExecuteTxResponse = await buildAndSubmitGaslessTx(signer, tx);
 parseTxResponse(sponsorSignAndExecuteTxResponse);
+
 
 
 
@@ -152,7 +159,6 @@ async function buildAndSubmitGaslessTx(signer: ShinamiWalletSigner, tx: Transact
 }
 
 
-
 //
 // New type to represent key object data
 //
@@ -161,7 +167,6 @@ type ObjectInfo = {
   objectId: string;
   version: string;
 }
-
 
 
 //
