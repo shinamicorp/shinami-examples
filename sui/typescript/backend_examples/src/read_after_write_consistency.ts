@@ -118,7 +118,8 @@ if (updatedObjInfo) {
 //  guarantees that the same node that responded to our `waitForTransaction` request 
 //  is the same one that we then use to read from (since we're using the same API key and IP address). 
 //  This guarantees to us that the effects of the transaction we waited for are reflected in our reads.
-// For more on sticky-routing, see LINK
+// For more on sticky-routing, see 
+//   https://docs.shinami.com/docs/authentication-and-api-keys#node-service-sticky-routing
 
 // Example 1: you can now make a read knowing that the transaction's effects will be reflected.
 const walletContents = await shinamiNodeClient.getOwnedObjects({
