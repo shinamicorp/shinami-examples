@@ -42,6 +42,15 @@ const CREATE_WALLET_IF_NOT_FOUND = true;
 const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
 console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
 
+// To use in case we don't want to send the sender signature to the FE.
+// If you want to get a signature on the FE but not let the user submit the 
+//  transaction until after you perform additional checks and then submit the
+//  transaction on the BE, you can do this by not sending the sponsor signature
+//  to the FE. Of course, in production you'd likely use a db where you store 
+//   other info alongside each signature, like the tx digest and tx bytes.
+const KEEP_SENDER_SIGNATURE_ON_BE = false; // must be set to false if the FE is submitting the tx
+let backendSponsorSignature: string | undefined = undefined;
+
 // Initilaize our server
 const app = express();
 app.use(express.json());
@@ -65,7 +74,7 @@ ViteExpress.listen(app, 3000, () =>
 app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
-
+    // We'll set the sender as a part of this request.
     const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
     res.json(sponsorAndExecuteResp);
   } catch (err) {
@@ -83,11 +92,19 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 app.post('/buildSponsoredtx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
+    // Set the sender before sponsorship
     gaslessTx.sender = req.body.sender;
-
     const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
 
-    res.json(sponsoredTx);
+    if (KEEP_SENDER_SIGNATURE_ON_BE) {
+      backendSponsorSignature = sponsoredTx.signature;
+    }
+
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: KEEP_SENDER_SIGNATURE_ON_BE ? undefined : sponsoredTx.signature
+    });
+
   } catch (err) {
     next(err);
   }
@@ -99,10 +116,11 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 // 1. Execute a sponsored transaction, given the transaction and the sender and sponsor signatures.
 // 2. Return the SuiTransactionBlockResponse to the FE
 app.post('/executeSponsoredTx', async (req, res, next) => {
+  const sponsorSig = KEEP_SENDER_SIGNATURE_ON_BE ? backendSponsorSignature : req.body.sponsorSig;
   try {
     const submitTxResp = await nodeClient.executeTransactionBlock({
       transactionBlock: req.body.tx,
-      signature: [req.body.senderSig, req.body.sponsorSig]
+      signature: [req.body.senderSig, sponsorSig]
     });
 
     res.json(submitTxResp);

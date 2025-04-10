@@ -1,4 +1,5 @@
 import "./App.css";
+import "./index.css";
 import { useState } from "react";
 import {
   ConnectButton,
@@ -6,7 +7,7 @@ import {
   useSignTransaction,
   useSuiClient
 } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
+import { Box, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 
@@ -47,7 +48,9 @@ function App() {
     let suiTxResponse = undefined;
     try {
       if (currentAccount) {
-        suiTxResponse = await connectedWalletTx(x, y, currentAccount.address);
+        suiTxResponse = await
+          connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
+        // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
       }
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
@@ -92,7 +95,8 @@ function App() {
   // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
   // 3. Ask the backend to execute the signed transaction.
   // 4. Return the SuiTransactionBlockResponse to the caller.
-  const connectedWalletTx = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+  const connectedWalletTxBEBuildBESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+    console.log("connectedWalletTxBEBuildBESubmit");
     const sponsorshipResp = await axios.post('/buildSponsoredtx', {
       x: x,
       y: y,
@@ -105,11 +109,35 @@ function App() {
 
     const resp = await axios.post('/executeSponsoredTx', {
       tx: sponsorshipResp.data.txBytes,
-      sponsorSig: sponsorshipResp.data.signature,
+      sponsorSig: sponsorshipResp.data.sponsorSig,
       senderSig: signature
     });
     return resp.data;
   }
+
+  // 1. Ask the backend to build and sponsor a Move call transction with the given user input.
+  // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
+  // 3. Submit the transaction to Fullnode for execution from the frontend.
+  // 4. Return the SuiTransactionBlockResponse to the caller.
+  const connectedWalletTxBEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+    console.log("connectedWalletTxBEBuildFESubmit");
+    const sponsorshipResp = await axios.post('/buildSponsoredtx', {
+      x: x,
+      y: y,
+      sender: senderAddress
+    });
+
+    const { signature } = await signTransaction({
+      transaction: sponsorshipResp.data.txBytes
+    });
+
+    const resp = await suiClient.executeTransactionBlock({
+      transactionBlock: sponsorshipResp.data.txBytes,
+      signature: [sponsorshipResp.data.sponsorSig, signature]
+    })
+    return resp;
+  }
+
 
 
   // 1. Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
@@ -117,6 +145,7 @@ function App() {
   //    is just a hard-coded wallet for simplicity.
   // 2. Return the SuiTransactionBlockResponse to the caller.
   const invisibleWalletTx = async (x: number, y: number): Promise<SuiTransactionBlockResponse> => {
+    console.log("invisibleWalletTx");
     const resp = await axios.post('/invisibleWalletTx', {
       x: x,
       y: y,
@@ -133,7 +162,7 @@ function App() {
         <Heading>Shinami Gas Station + dApp Kit</Heading>
       </Box>
       <Box>
-        <h3>Pick two integers to add in a Move call</h3>
+        <h3>Pick two positive integers to add together in a Move call</h3>
         <form onSubmit={executeTransaction}>
           <div>
             <label htmlFor="integerOne">First integer:</label>
