@@ -48,7 +48,7 @@ const RECIPIENT_ADDRESS = "{{SuiAddress}}";
 const gaslessTx = await
   clockMoveCallGaslessTransaction();
 // clockMoveCallGaslessTransactionAlternateVersion();
-// clockMoveCallGaslessTransactionOfflineBuildManualBudget(SENDER_ADDRESS);
+// clockMoveCallGaslessTransactionOfflineBuildManualBudget();
 // checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
 // splitCoinOwnedByGaslessTransaction(COIN_TO_SPLIT_FROM_ID, SENDER_ADDRESS);
 // mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID);
@@ -97,40 +97,33 @@ async function clockMoveCallGaslessTransaction(): Promise<GaslessTransaction> {
 //
 // Builds a Move call transaction for sponsorship in multiple steps with the following behaviors:
 //  1. Manually budgets the sponsorship (no Shinami auto-budgeting, with its sui_dryRunTransactionBlock
-//   for gas budget estimation and its ability to catch some transaction errors pre-sponsorship.)
-//   We recommend most integrations use auto-budgeting to be safe, but if you need the lowest latency 
-//    possible, especially if you already make a sui_dryRunTransactionBlock request, manual budgeting 
-//    makes sense.
+//   for gas budget estimation and its ability to catch some transaction errors pre-sponsorship).
+//   We recommend most integrations use auto-budgeting to be safe and gas-efficient, but if you need 
+//    the lowest latency possible, especially if you already make a sui_dryRunTransactionBlock request, 
+//    manual budgeting makes sense.
 //  2. Building the transaction offline: https://docs.sui.io/guides/developer/sui-101/building-ptb#building-offline
 //      This can save a few requests that would otherwise get made: https://docs.shinami.com/docs/transaction-block-build-requests
-//      Note through that those requests are extremely fast for us to fulfill once they hit our servers, so this is only a latency 
+//      Note however that those requests are extremely fast for us to fulfill once they hit our servers, so this is only a latency 
 //      concern if your servers are geographically far from one of our Fullnodes. 
-async function clockMoveCallGaslessTransactionOfflineBuildManualBudget(sender: string): Promise<GaslessTransaction> {
+async function clockMoveCallGaslessTransactionOfflineBuildManualBudget(): Promise<GaslessTransaction> {
   const sharedClockInput = Inputs.SharedObjectRef({
     objectId: "0x6",
     mutable: false,
     initialSharedVersion: 1
-  })
-  const tx = new Transaction();
-  tx.moveCall({
-    target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
-    arguments: [tx.object(sharedClockInput)],
   });
-  tx.setSender(sender);
 
-  const builtTx = await tx.build({ onlyTransactionKind: true }); // we omit the node client because we're building offline
-  const base64TX = btoa(
-    builtTx
-      .reduce((data, byte) => data + String.fromCharCode(byte), '')
+  return await buildGaslessTransaction(
+    (txb) => {
+      txb.moveCall({
+        target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
+        arguments: [txb.object(sharedClockInput)],
+      });
+    }, // 'buildGaslessTransaction' includes a Transaction.build() call. We don't pass in a node client since we're building offline.
+    {
+      // See our manual bugeting tips: https://docs.shinami.com/docs/sponsored-transaction-typescript-tutorial#tips-for-setting-your-sponsorship-budget
+      gasBudget: 15_000_000
+    }
   );
-  return {
-    txKind: base64TX,
-    sender: undefined, // We set sender above so don't need to here
-    // By including the gas budget we prevent auto-budgeting and its sui_dryRunTransactionBlock request for gas estimation.
-    // Of course, that method is also able to catch errors in the transaction pre-execution, so you lose that check.
-    gasBudget: 15_000_000, // See our manual bugeting tips: https://docs.shinami.com/docs/sponsored-transaction-typescript-tutorial#tips-for-setting-your-sponsorship-budget
-    gasPrice: undefined // Our Gas Station will set the current reference gas price if this is omitted.
-  };
 }
 
 
