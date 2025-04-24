@@ -9,10 +9,10 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@mysten/dapp-kit": "^0.14.50",
-    "@mysten/sui": "^1.21.2",
+    "@mysten/dapp-kit": "^0.15.5",
+    "@mysten/sui": "^1.27.1",
     "@radix-ui/themes": "^3.2.0",
-    "@shinami/clients": "^0.9.5",
+    "@shinami/clients": "^0.9.6",
     "@tanstack/react-query": "^5.66.8",
     "axios": "^1.7.9",
     "dotenv-flow": "^4.1.0",

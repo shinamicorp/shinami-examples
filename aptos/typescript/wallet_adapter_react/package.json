@@ -9,10 +9,10 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.35.0",
-    "@aptos-labs/wallet-adapter-ant-design": "^4.0.1",
-    "@aptos-labs/wallet-adapter-react": "^4.0.1",
-    "@shinami/clients": "^0.9.5",
+    "@aptos-labs/ts-sdk": "^1.38.0",
+    "@aptos-labs/wallet-adapter-ant-design": "^4.0.13",
+    "@aptos-labs/wallet-adapter-react": "^5.0.4",
+    "@shinami/clients": "^0.9.6",
     "antd": "^5.24.1",
     "axios": "^1.7.9",
     "dotenv-flow": "^4.1.0",
