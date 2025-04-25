@@ -1,6 +1,7 @@
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { PasskeyKeypair } from '@mysten/sui/keypairs/passkey';
+import { PartialZkLoginSignature } from './types';
 
 const ZKLOGIN_KEYPAIR = "@zklogin/keypair";
 const JWT_RANDOMNESS = "@zklogin/jwt_randomness";
@@ -74,11 +75,11 @@ export const getZkSubValue = (): string | null => {
     return sessionStorage.getItem(ZK_SUB_VALUE);
 }
 
-export const storeZkProof = (proof: object): void => {
+export const storeZkProof = (proof: PartialZkLoginSignature): void => {
     sessionStorage.setItem(ZK_PROOF, JSON.stringify(proof));
 }
 
-export const getZkProof = (): object | null => {
+export const getZkProof = (): PartialZkLoginSignature | null => {
     const zkProof = sessionStorage.getItem(ZK_PROOF);
     return zkProof != null ? JSON.parse(zkProof) : zkProof;
 }

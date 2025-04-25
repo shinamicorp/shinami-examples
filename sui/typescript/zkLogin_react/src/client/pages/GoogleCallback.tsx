@@ -9,6 +9,8 @@ import {
     storeZkSubValue
 } from "../common";
 import axios from "axios";
+import { PartialZkLoginSignature } from "../types";
+import { jwtToAddress } from '@mysten/sui/zklogin';
 
 
 // Get our environmental variable from our .env.local file
@@ -69,6 +71,8 @@ const GoogleCallbackPage = () => {
         const walletAddress = walletInfo.data.walletAddress;
         const aud = walletInfo.data.aud;
         const sub = walletInfo.data.keyClaimValue;
+        const zkLoginUserAddress = jwtToAddress(jwt, salt);
+        console.log("Address from jwtToAddress(jwt, salt); : ", zkLoginUserAddress);
         storeZkAudValue(aud);
         storeZkSubValue(sub);
         storeSalt(salt);
@@ -84,7 +88,7 @@ const GoogleCallbackPage = () => {
         });
 
         console.log("zkProof: ", zkProof.data.zkProof);
-        storeZkProof(zkProof.data.zkProof);
+        storeZkProof(zkProof.data.zkProof as PartialZkLoginSignature);
 
         console.log("going to the TransactionPage...");
         window.location.href = `/transaction#${walletAddress}`;

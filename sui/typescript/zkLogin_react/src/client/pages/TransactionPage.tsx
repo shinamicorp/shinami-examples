@@ -18,10 +18,10 @@ import {
     getZkSubValue
 } from "../common";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
 import { fromBase64 } from "@mysten/sui/utils";
 import { genAddressSeed, getZkLoginSignature } from '@mysten/sui/zklogin';
-
+import { ZkLoginProof } from "../types";
+import { Transaction } from "@mysten/sui/transactions";
 
 
 // Get our environmental variable from our .env.local file
@@ -36,8 +36,6 @@ const nodeClient = createSuiClient(VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY);
 type AddCallEvent = {
     result: string;
 };
-
-type ZkLoginProof = Parameters<typeof getZkLoginSignature>["0"]["inputs"];
 
 const parseAddressFromURL = (url: string): string => {
     console.log("Parsing the wallet address from the URL");
@@ -56,14 +54,14 @@ enum WalletType {
 }
 
 const TransactionPage = () => {
+    const URL_WALLET_ADDRESS = parseAddressFromURL(window.location.href);
     const [latestDigest, setLatestDigest] = useState<string>();
     const [latestResult, setLatestResult] = useState<string>();
     const [firstInt, setFirstInt] = useState<string>();
     const [secondInt, setsecondInt] = useState<string>();
     const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
     const [walletType, setWalletType] = useState<WalletType>(WalletType.ZkLogin);
-
-    const URL_WALLET_ADDRESS = parseAddressFromURL(window.location.href);
+    const [walletAddress, setWalletAddress] = useState<string>(URL_WALLET_ADDRESS);
 
     const executeTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -136,7 +134,11 @@ const TransactionPage = () => {
             const ephemeralKeypair = getEmphemeralKeypair();
             if (ephemeralKeypair) {
                 // First, sign the tx with the ephemeral keypair
-                const { signature } = await ephemeralKeypair.signTransaction(fromBase64(txString));
+                // const { signature } = await ephemeralKeypair.signTransaction(fromBase64(txString));
+
+                const signature = await Transaction.from(txString).sign(
+                    { signer: ephemeralKeypair }
+                );
 
                 // Next, generate an address seed
                 const salt = getSalt();
@@ -168,12 +170,12 @@ const TransactionPage = () => {
                 if (!maxEpoch) {
                     throw new Error("Transaction page: no max Epoch!");
                 }
-                const fullProofData = { ...zkProof, addressSeed: addSeed };
+                const fullProofData: ZkLoginProof = { ...zkProof, addressSeed: addSeed };
                 // console.log("fullProofData: ", fullProofData);
                 return getZkLoginSignature({
-                    inputs: fullProofData as ZkLoginProof,
+                    inputs: fullProofData,
                     maxEpoch,
-                    userSignature: signature,
+                    userSignature: signature.signature,
                 });
             }
             return null;
@@ -218,8 +220,22 @@ const TransactionPage = () => {
         e.preventDefault();
         if (walletType == WalletType.ZkLogin) {
             setWalletType(WalletType.Passkey);
+            const address = getPasskeyWalletAddress();
+            if (!address) {
+                console.log("No known passkey wallet address. Sending user back to homepage to create a passkey wallet...");
+                window.location.href = "/";
+            } else {
+                setWalletAddress(address);
+            }
         } else {
             setWalletType(WalletType.ZkLogin);
+            const address = getZkWalletAddress();
+            if (!address) {
+                console.log("No known zkLogin wallet address. Sending user back to homepage to create a zkLogin wallet...");
+                window.location.href = "/";
+            } else {
+                setWalletAddress(address);
+            }
         }
     }
 
@@ -229,18 +245,20 @@ const TransactionPage = () => {
                 <Heading>Shinami Gas Station sponsored transaction</Heading>
             </Box>
             <Box>
-                <h2>Pick two positive integers to add together in a Move call</h2>
-                <h3>Using your {walletType} wallet</h3>
+                <h2>Using your {walletType} wallet</h2>
+                <p>Wallet address: {walletAddress}</p>
                 <form onSubmit={changeWalletType}>
-                    <button type="submit">Switch wallet type</button>
+                    <button type="submit">Click to switch wallet type (will return to homepage if you don't have the other wallet type)</button>
                 </form>
+                <br></br>
+                <h2>Pick two positive integers to add together via a Move call</h2>
                 <form onSubmit={executeTransaction}>
                     <div>
-                        <label htmlFor="integerOne">First integer:</label>
+                        <label htmlFor="integerOne">First positive integer:</label>
                         <input type="number" name="integerOne" id="integerOne" required />
                     </div>
                     <div>
-                        <label htmlFor="integerTwo">Second integer:</label>
+                        <label htmlFor="integerTwo">Second positive integer:</label>
                         <input type="number" name="integerTwo" id="integerTwo" required />
                     </div>
                     <button type="submit">Make move call</button>

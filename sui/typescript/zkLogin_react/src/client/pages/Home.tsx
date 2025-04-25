@@ -1,5 +1,5 @@
 import "../App.css";
-import GoogleButton from 'react-google-button';
+// import GoogleButton from 'react-google-button';
 import { generateNonce, generateRandomness } from '@mysten/sui/zklogin';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { createSuiClient } from "@shinami/clients/sui";
@@ -73,7 +73,7 @@ const fetchOrCreatePasskey = async () => {
         } else {
             console.log("Storing Passkey keypair: ", keypair);
             storePasskeyKeypair(keypair);
-            const walletAddress = keypair.toSuiAddress();
+            const walletAddress = keypair.getPublicKey().toSuiAddress();
             storePasskeyWalletAddress(walletAddress);
             console.log("Passkey wallet address: ", walletAddress);
             window.location.href = `/transaction#${walletAddress}`;
@@ -92,14 +92,13 @@ const HomePage = () => {
     return (
         <>
             <div>
-                <h2>Shinami Sponsored Transactions with Sui zkLogin and passkeys</h2>
+                <h2>Shinami Sponsored Transactions with single-app Sui zkLogin and passkey wallets</h2>
                 <br />
-                <button onClick={() => fetchOrCreatePasskey()}>Use passkey</button>
+                <button onClick={() => fetchOrCreatePasskey()}>Use a passkey wallet with your phone</button>
                 <br />
-                <GoogleButton
-                    type="dark"
-                    onClick={() => { logInWithGoogle() }}
-                />
+                <br />
+                <br />
+                <button onClick={() => logInWithGoogle()}>Use a zkLogin wallet with your Google login</button>
             </div>
         </>
     );
