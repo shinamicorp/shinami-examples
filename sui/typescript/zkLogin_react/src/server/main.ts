@@ -10,7 +10,7 @@ import {
 } from "@shinami/clients/sui";
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { getExtendedEphemeralPublicKey } from '@mysten/sui/zklogin';
-import { fromHEX, toBase64 } from "@mysten/sui/utils";
+import { fromHEX, toBase64, fromBase64, toHex } from "@mysten/sui/utils";
 
 
 import dotenvFlow from 'dotenv-flow';
@@ -37,6 +37,10 @@ app.use(express.json());
 ViteExpress.listen(app, 3000, () =>
     console.log("Server is listening on port 3000..."),
 );
+
+function base64ToBigInt(s: string): bigint {
+    return BigInt(`0x${toHex(fromBase64(s))}`);
+}
 
 
 // Endpoint to 
@@ -70,6 +74,7 @@ app.post('/getZkProof', async (req, res, next) => {
         console.log("calling createZkLoginProof");
         const publicKey = new Ed25519PublicKey(req.body.publicKey);
         console.log("extended ephemeral keypair: ", getExtendedEphemeralPublicKey(publicKey));
+        console.log("extended ephemeral keypair as BigInt: ", base64ToBigInt(getExtendedEphemeralPublicKey(publicKey)));
         console.log("BE public key B64: ", publicKey.toBase64());
         console.log("jwt: ", req.body.jwt);
         console.log("maxEpoch: ", req.body.maxEpoch);

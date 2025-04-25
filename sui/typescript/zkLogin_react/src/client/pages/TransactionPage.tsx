@@ -15,7 +15,8 @@ import {
     getZkProof,
     getMaxEpoch,
     getZkAudValue,
-    getZkSubValue
+    getZkSubValue,
+    clearZkLoginSessionData
 } from "../common";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { fromBase64 } from "@mysten/sui/utils";
@@ -128,19 +129,18 @@ const TransactionPage = () => {
         }
     }
 
+    // For these steps, see: https://docs.sui.io/guides/developer/cryptography/zklogin-integration#assemble-the-zklogin-signature-and-submit-the-transaction
     const getSenderSignature = async (txString: string): Promise<string | null> => {
         if (walletType == WalletType.ZkLogin) {
             console.log("Getting zkLogin wallet signature...");
             const ephemeralKeypair = getEmphemeralKeypair();
             if (ephemeralKeypair) {
-                // First, sign the tx with the ephemeral keypair
-                // const { signature } = await ephemeralKeypair.signTransaction(fromBase64(txString));
-
+                // 1. First, sign the tx with the ephemeral keypair
                 const signature = await Transaction.from(txString).sign(
                     { signer: ephemeralKeypair }
                 );
 
-                // Next, generate an address seed
+                // 2. Next, generate an address seed
                 const salt = getSalt();
                 if (!salt) {
                     throw new Error("Tranasction Page: no salt!");
@@ -160,7 +160,8 @@ const TransactionPage = () => {
                     aud,
                 ).toString();
 
-                // Finally, generate the zkLogin signature
+                // 3. Finally, generate the zkLogin signature
+                // 3a. Get the zkProof
                 const zkProof = getZkProof();
                 if (!zkProof) {
                     throw new Error("Transaction Page: no zkProof!");
@@ -170,8 +171,8 @@ const TransactionPage = () => {
                 if (!maxEpoch) {
                     throw new Error("Transaction page: no max Epoch!");
                 }
+                // 3b. combine the proof and addressSeed and generate the zkSignature
                 const fullProofData: ZkLoginProof = { ...zkProof, addressSeed: addSeed };
-                // console.log("fullProofData: ", fullProofData);
                 return getZkLoginSignature({
                     inputs: fullProofData,
                     maxEpoch,
@@ -216,6 +217,8 @@ const TransactionPage = () => {
         return resp.data;
     }
 
+    // Toggle between using zkLogin and Passkey wallet as the sender.
+    //  Update the sender address to the new sender.
     const changeWalletType = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (walletType == WalletType.ZkLogin) {
@@ -237,6 +240,13 @@ const TransactionPage = () => {
                 setWalletAddress(address);
             }
         }
+    }
+
+    // Delete the user's zkLogin session data and return them to the homepage
+    const logout = async (): Promise<undefined> => {
+        console.log("Removing zkLogin data from session storage and returning the user to the homepage.");
+        clearZkLoginSessionData();
+        window.location.href = "/";
     }
 
     return (
@@ -263,6 +273,17 @@ const TransactionPage = () => {
                     </div>
                     <button type="submit">Make move call</button>
                 </form>
+                <h3>Transaction result:</h3>
+                {newSuccessfulResult ?
+                    <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+                    :
+                    <label>Latest Successful Digest: N/A</label>
+                }
+                {walletType == WalletType.ZkLogin ? <GoogleLogout
+                    type="dark"
+                    label="Logout"
+                    onClick={() => { logout() }}
+                /> : ""}
             </Box>
         </>
     );

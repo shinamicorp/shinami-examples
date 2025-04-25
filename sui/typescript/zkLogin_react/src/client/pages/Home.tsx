@@ -6,16 +6,22 @@ import { createSuiClient } from "@shinami/clients/sui";
 import {
     storeJWTRandomness,
     storeMaxEpoch,
+    getMaxEpoch,
     storeEmphemeralKeypair,
-    storePasskeyKeypair,
+    clearZkLoginSessionData,
+    getZkWalletAddress,
+    storePasskeyKeypairPublicKey,
     storePasskeyWalletAddress,
-    getPasskeyKeypair
+    getPasskeyKeypairPublicKey,
+    PASSKEY_RP_NAME,
+    PASSKEY_RP_ID
 } from "../common";
 import {
     BrowserPasskeyProvider,
     BrowserPasswordProviderOptions,
-    PasskeyKeypair
+    PasskeyKeypair,
 } from '@mysten/sui/keypairs/passkey';
+
 
 // Get our environmental variable from our .env.local file
 const VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY;
@@ -23,12 +29,14 @@ const VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PU
 if (!(VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY)) {
     throw Error('VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY .env.local variable not set');
 }
+const suiClient = createSuiClient(VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY);
 
-const createNonce = async (epochsValidFor: number = 1): Promise<string> => {
-    const suiClient = createSuiClient(VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY);
-    const { epoch, epochDurationMs, epochStartTimestampMs } = await suiClient.getLatestSuiSystemState();
-
-    const maxEpoch = Number(epoch) + epochsValidFor; // this means the ephemeral key will be active for 2 epochs from now.
+// Create a nonce for the JWT request.
+//  We'll save the randomness, maxEpoch, and ephemeral Keypair because we need those later for
+//   zkProof generation and transaction signing. For more on nonce generation, including OAuth URLs for
+//   providers other than Google, see: https://docs.sui.io/guides/developer/cryptography/zklogin-integration#get-jwt
+const createNonce = async (currentEpoch: number, epochsValidFor: number = 1): Promise<string> => {
+    const maxEpoch = Number(currentEpoch) + epochsValidFor; // this means the ephemeral key will be active for 2 epochs from now.
     const ephemeralKeyPair = new Ed25519Keypair();
     const randomness = generateRandomness();
 
@@ -43,47 +51,58 @@ const createNonce = async (epochsValidFor: number = 1): Promise<string> => {
     return generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
 }
 
-// 1. 
-// 2. Redirect the user to Google's OAuth login flow. The user will then be redirected back
-//     to the '/googlecallback' page where we'll parse the JWT and...
-const logInWithGoogle = async () => {
+// Redirect the user to Google's OAuth login flow. The user will then be redirected back
+//     to the '/googlecallback' page where we'll parse the JWT and ask for a zkProof.
+const usezkLogin = async () => {
     const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!(GOOGLE_CLIENT_ID)) {
         throw Error('GOOGLE_CLIENT_ID .env.local variable not set');
     }
-    const NONCE = await createNonce();
-    const REDIRECT_URI = 'http://localhost:3000/googlecallback';
-    const LOGIN_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&scope=openid&nonce=${NONCE}&redirect_uri=${REDIRECT_URI}&client_id=${GOOGLE_CLIENT_ID}`;
-    window.location.href = LOGIN_URL;
+
+    const maxEpoch = getMaxEpoch();
+    const { epoch, epochDurationMs, epochStartTimestampMs } = await suiClient.getLatestSuiSystemState();
+    if (!maxEpoch || (Number(epoch) >= Number(maxEpoch))) {
+        console.log("Missing or expired max epoch value. Deleting any zkLogin session data and generating and loggin the user in with Google...");
+        clearZkLoginSessionData();
+        const NONCE = await createNonce(Number(epoch));
+        const REDIRECT_URI = 'http://localhost:3000/googlecallback';
+        const GOOGLE_OAUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&scope=openid&nonce=${NONCE}&redirect_uri=${REDIRECT_URI}&client_id=${GOOGLE_CLIENT_ID}`;
+        window.location.href = GOOGLE_OAUTH_URL;
+    } else {
+        console.log("Found a valid maxEpcoh: ", maxEpoch, " so taking the user to the transaction page...");
+        const walletAddress = getZkWalletAddress();
+        window.location.href = `/transaction#${walletAddress}`;
+    }
 }
 
 const fetchOrCreatePasskey = async () => {
 
-    let keypair = getPasskeyKeypair();
-    if (!keypair) {
+    let keypair_public_key = getPasskeyKeypairPublicKey();
+    if (!keypair_public_key) {
         console.log("no passkey keypair found");
-        keypair = await PasskeyKeypair.getPasskeyInstance(
+        const keypair = await PasskeyKeypair.getPasskeyInstance(
             new BrowserPasskeyProvider('Sui Passkey Example', {
-                rpName: 'Sui Passkey Example',
-                rpId: window.location.hostname,
+                rpName: PASSKEY_RP_NAME,
+                rpId: PASSKEY_RP_ID,
             } as BrowserPasswordProviderOptions),
         );
         if (!keypair) {
             throw new Error("Unable to generate keypair");
         } else {
             console.log("Storing Passkey keypair: ", keypair);
-            storePasskeyKeypair(keypair);
+            storePasskeyKeypairPublicKey(keypair.getPublicKey().toBase64());
             const walletAddress = keypair.getPublicKey().toSuiAddress();
             storePasskeyWalletAddress(walletAddress);
             console.log("Passkey wallet address: ", walletAddress);
             window.location.href = `/transaction#${walletAddress}`;
         }
     } else {
-        console.log("found an existing passkey keypair", keypair);
-        const walletAddress = keypair.getPublicKey().toSuiAddress();
-        storePasskeyWalletAddress(walletAddress);
-        console.log("passkey wallet address: ", walletAddress);
-        window.location.href = `/transaction#${walletAddress}`;
+        console.log("found an existing passkey keypair");
+
+        // const walletAddress = keypair.getPublicKey().toSuiAddress();
+        // storePasskeyWalletAddress(walletAddress);
+        // console.log("passkey wallet address: ", walletAddress);
+        // window.location.href = `/transaction#${walletAddress}`;
     }
 }
 
@@ -98,7 +117,7 @@ const HomePage = () => {
                 <br />
                 <br />
                 <br />
-                <button onClick={() => logInWithGoogle()}>Use a zkLogin wallet with your Google login</button>
+                <button onClick={() => usezkLogin()}>Use a zkLogin wallet with your Google login</button>
             </div>
         </>
     );
