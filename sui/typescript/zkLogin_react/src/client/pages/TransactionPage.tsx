@@ -5,9 +5,6 @@ import GoogleLogout from 'react-google-button';
 import { Box, Heading } from "@radix-ui/themes";
 import { createSuiClient } from "@shinami/clients/sui";
 import {
-    PasskeyKeypair
-} from '@mysten/sui/keypairs/passkey';
-import {
     getEmphemeralKeypair,
     getZkWalletAddress,
     getSalt,
@@ -16,13 +13,21 @@ import {
     getMaxEpoch,
     getZkAudValue,
     getZkSubValue,
-    clearZkLoginSessionData
+    clearZkLoginSessionData,
+    getPasskeyKeypairPublicKey,
+    PASSKEY_RP_NAME,
+    PASSKEY_RP_ID
 } from "../common";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { fromBase64 } from "@mysten/sui/utils";
 import { genAddressSeed, getZkLoginSignature } from '@mysten/sui/zklogin';
 import { ZkLoginProof } from "../types";
 import { Transaction } from "@mysten/sui/transactions";
+import {
+    BrowserPasskeyProvider,
+    BrowserPasswordProviderOptions,
+    PasskeyKeypair,
+} from '@mysten/sui/keypairs/passkey';
 
 
 // Get our environmental variable from our .env.local file
@@ -182,6 +187,21 @@ const TransactionPage = () => {
             return null;
         } else if (walletType == WalletType.Passkey) {
             console.log("Getting passkey wallet signature...");
+            const publicKeyBytes = getPasskeyKeypairPublicKey();
+            console.log("Get back Passkey public key bytes: ", publicKeyBytes);
+            if (publicKeyBytes != null) {
+                let passkeyKeypair = new PasskeyKeypair(publicKeyBytes, new BrowserPasskeyProvider('Sui Passkey Example', {
+                    rpName: PASSKEY_RP_NAME,
+                    rpId: PASSKEY_RP_ID,
+                } as BrowserPasswordProviderOptions));
+                console.log("reconstructed keypair address: ", passkeyKeypair.toSuiAddress());
+                const signature = await Transaction.from(txString).sign(
+                    { signer: passkeyKeypair }
+                );
+                return signature.signature;
+            } else {
+                console.log("unable to get keypair bytes our of public storage");
+            }
             return null;
         } else {
             throw new Error("Uknown wallet type: ", walletType);
@@ -275,7 +295,7 @@ const TransactionPage = () => {
                 </form>
                 <h3>Transaction result:</h3>
                 {newSuccessfulResult ?
-                    <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+                    <label>Latest successful result: {firstInt} + {secondInt} = {latestResult} (digest: {latestDigest})</label>
                     :
                     <label>Latest Successful Digest: N/A</label>
                 }

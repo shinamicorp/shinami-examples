@@ -101,12 +101,13 @@ export const clearZkLoginSessionData = (): void => {
     sessionStorage.removeItem(ZKLOGIN_KEYPAIR);
 }
 
-export const storePasskeyKeypairPublicKey = (publicKey: string): void => {
-    localStorage.setItem(PASSKEY_KEYPAIR_PUBLIC_KEY, publicKey);
+export const storePasskeyKeypairPublicKey = (publicKey: Uint8Array): void => {
+    localStorage.setItem(PASSKEY_KEYPAIR_PUBLIC_KEY, JSON.stringify(publicKey));
 }
 
-export const getPasskeyKeypairPublicKey = (): string | null => {
-    return localStorage.getItem(PASSKEY_KEYPAIR_PUBLIC_KEY);
+export const getPasskeyKeypairPublicKey = (): Uint8Array | null => {
+    const data = localStorage.getItem(PASSKEY_KEYPAIR_PUBLIC_KEY);
+    return data != null ? new Uint8Array(Object.values(JSON.parse(data))) : data;
 }
 
 export const storePasskeyWalletAddress = (address: string): void => {
@@ -115,4 +116,9 @@ export const storePasskeyWalletAddress = (address: string): void => {
 
 export const getPasskeyWalletAddress = (): string | null => {
     return localStorage.getItem(PASSKEY_WALLET_ADDRESS);
+}
+
+export const clearPasskeyData = (): void => {
+    localStorage.removeItem(PASSKEY_KEYPAIR_PUBLIC_KEY);
+    localStorage.removeItem(PASSKEY_WALLET_ADDRESS);
 }

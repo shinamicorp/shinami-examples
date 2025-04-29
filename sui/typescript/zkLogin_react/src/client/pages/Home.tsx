@@ -13,6 +13,8 @@ import {
     storePasskeyKeypairPublicKey,
     storePasskeyWalletAddress,
     getPasskeyKeypairPublicKey,
+    getPasskeyWalletAddress,
+    clearPasskeyData,
     PASSKEY_RP_NAME,
     PASSKEY_RP_ID
 } from "../common";
@@ -20,6 +22,7 @@ import {
     BrowserPasskeyProvider,
     BrowserPasswordProviderOptions,
     PasskeyKeypair,
+    findCommonPublicKey
 } from '@mysten/sui/keypairs/passkey';
 
 
@@ -75,34 +78,74 @@ const usezkLogin = async () => {
     }
 }
 
-const fetchOrCreatePasskey = async () => {
+const recoverExistingKeypair = async (): Promise<PasskeyKeypair | undefined> => {
+    let provider = new BrowserPasskeyProvider('Sui Passkey Example', {
+        rpName: PASSKEY_RP_NAME,
+        rpId: PASSKEY_RP_ID,
+    } as BrowserPasswordProviderOptions);
 
+    const testMessage = new TextEncoder().encode('Hello world!');
+    const possiblePks = await PasskeyKeypair.signAndRecover(provider, testMessage);
+
+    const testMessage2 = new TextEncoder().encode('Hello world 2!');
+    const possiblePks2 = await PasskeyKeypair.signAndRecover(provider, testMessage2);
+
+    const commonPk = findCommonPublicKey(possiblePks, possiblePks2);
+    return new PasskeyKeypair(commonPk.toRawBytes(), provider);
+}
+
+const moveToTransactionPageWithKeyPair = (keypair: PasskeyKeypair, saveKeyPair: boolean = true) => {
+    const keypair_public_key = keypair.getPublicKey().toRawBytes()
+    console.log("Storing Passkey public key bytes: ", keypair_public_key);
+    storePasskeyKeypairPublicKey(keypair_public_key);
+    const walletAddress = keypair.getPublicKey().toSuiAddress();
+    storePasskeyWalletAddress(walletAddress);
+    console.log("Passkey wallet address: ", walletAddress);
+    window.location.href = `/transaction#${walletAddress}`;
+}
+
+const fetchOrCreatePasskey = async () => {
+    clearPasskeyData();
+
+    // 1. First, try to fetch an existing public key from local storage
     let keypair_public_key = getPasskeyKeypairPublicKey();
+    let passkeyKeypair = undefined;
+
+    // 2. If not found, try to recover one. For now, this is an annyoing process for first time users.
     if (!keypair_public_key) {
-        console.log("no passkey keypair found");
-        const keypair = await PasskeyKeypair.getPasskeyInstance(
-            new BrowserPasskeyProvider('Sui Passkey Example', {
-                rpName: PASSKEY_RP_NAME,
-                rpId: PASSKEY_RP_ID,
-            } as BrowserPasswordProviderOptions),
-        );
-        if (!keypair) {
-            throw new Error("Unable to generate keypair");
+        console.log("No passkey keypair public key found. Attempting to restore an existing passkey.");
+        passkeyKeypair = await recoverExistingKeypair();
+        if (passkeyKeypair) {
+            console.log("storing recovered keypair and moving to tx page...");
+            moveToTransactionPageWithKeyPair(passkeyKeypair);
         } else {
-            console.log("Storing Passkey keypair: ", keypair);
-            storePasskeyKeypairPublicKey(keypair.getPublicKey().toBase64());
-            const walletAddress = keypair.getPublicKey().toSuiAddress();
-            storePasskeyWalletAddress(walletAddress);
-            console.log("Passkey wallet address: ", walletAddress);
-            window.location.href = `/transaction#${walletAddress}`;
+            // 3. If we still don't have a public key, it means we could not 
+            //     recover one. So, we'll try to generate a new one.
+            console.log("no passkey keypair found or recovered");
+            passkeyKeypair = await PasskeyKeypair.getPasskeyInstance(
+                new BrowserPasskeyProvider('Shinami Sponsored tx passkey', {
+                    rpName: PASSKEY_RP_NAME,
+                    rpId: PASSKEY_RP_ID,
+                } as BrowserPasswordProviderOptions),
+            );
+            if (!passkeyKeypair) {
+                throw new Error("Unable to generate keypair");
+            } else {
+                console.log("storing newly generated keypair and moving to tx page...");
+                moveToTransactionPageWithKeyPair(passkeyKeypair);
+            }
         }
     } else {
         console.log("found an existing passkey keypair");
-
-        // const walletAddress = keypair.getPublicKey().toSuiAddress();
-        // storePasskeyWalletAddress(walletAddress);
-        // console.log("passkey wallet address: ", walletAddress);
-        // window.location.href = `/transaction#${walletAddress}`;
+        const publicKeyBytes = getPasskeyKeypairPublicKey();
+        console.log("Get back Passkey public key bytes: ", publicKeyBytes);
+        if (publicKeyBytes != null) {
+            let passkeyKeypair = new PasskeyKeypair(publicKeyBytes, new BrowserPasskeyProvider('Sui Passkey Example', {
+                rpName: PASSKEY_RP_NAME,
+                rpId: PASSKEY_RP_ID,
+            } as BrowserPasswordProviderOptions));
+            moveToTransactionPageWithKeyPair(passkeyKeypair, false);
+        }
     }
 }
 
