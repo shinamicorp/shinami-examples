@@ -1,8 +1,6 @@
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
-import { PasskeyKeypair } from '@mysten/sui/keypairs/passkey';
 import { PartialZkLoginSignature } from './types';
-import { normalizedTypeToMoveTypeSignature } from '@mysten/sui/transactions';
 
 const ZKLOGIN_KEYPAIR = "@zklogin/keypair";
 const JWT_RANDOMNESS = "@zklogin/jwt_randomness";
@@ -18,6 +16,11 @@ const PASSKEY_WALLET_ADDRESS = "@passkey/wallet_address";
 
 export const PASSKEY_RP_NAME = "Shinami Gas Station Example";
 export const PASSKEY_RP_ID = "shinami_gas_station_example";
+
+export enum WalletType {
+    ZkLogin = "zkLogin",
+    Passkey = "Passkey"
+}
 
 // We use sessionStorage because persistent storage of the ephemeral keypair and ZK proof is a security risk.
 // See: https://docs.sui.io/guides/developer/cryptography/zklogin-integration#caching-the-ephemeral-private-key-and-zk-proof

@@ -1,5 +1,4 @@
 import "../App.css";
-// import GoogleButton from 'react-google-button';
 import { generateNonce, generateRandomness } from '@mysten/sui/zklogin';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { createSuiClient } from "@shinami/clients/sui";
@@ -9,14 +8,12 @@ import {
     getMaxEpoch,
     storeEmphemeralKeypair,
     clearZkLoginSessionData,
-    getZkWalletAddress,
     storePasskeyKeypairPublicKey,
     storePasskeyWalletAddress,
     getPasskeyKeypairPublicKey,
-    getPasskeyWalletAddress,
-    clearPasskeyData,
     PASSKEY_RP_NAME,
-    PASSKEY_RP_ID
+    PASSKEY_RP_ID,
+    WalletType
 } from "../common";
 import {
     BrowserPasskeyProvider,
@@ -24,6 +21,7 @@ import {
     PasskeyKeypair,
     findCommonPublicKey
 } from '@mysten/sui/keypairs/passkey';
+
 
 
 // Get our environmental variable from our .env.local file
@@ -39,7 +37,7 @@ const suiClient = createSuiClient(VITE_SHINAMI_PUBLIC_NODE_TESTNET_API_KEY);
 //   zkProof generation and transaction signing. For more on nonce generation, including OAuth URLs for
 //   providers other than Google, see: https://docs.sui.io/guides/developer/cryptography/zklogin-integration#get-jwt
 const createNonce = async (currentEpoch: number, epochsValidFor: number = 1): Promise<string> => {
-    const maxEpoch = Number(currentEpoch) + epochsValidFor; // this means the ephemeral key will be active for 2 epochs from now.
+    const maxEpoch = Number(currentEpoch) + epochsValidFor; // this means the ephemeral key will be active for this epoch and two more
     const ephemeralKeyPair = new Ed25519Keypair();
     const randomness = generateRandomness();
 
@@ -47,15 +45,12 @@ const createNonce = async (currentEpoch: number, epochsValidFor: number = 1): Pr
     storeJWTRandomness(randomness);
     storeMaxEpoch(maxEpoch);
     storeEmphemeralKeypair(ephemeralKeyPair);
-    console.log("Home page emphemeralKeyPair.getPublicKey().toBase64(): ", ephemeralKeyPair.getPublicKey().toBase64());
-    console.log("Home page randomness: ", randomness);
-    console.log("Home page max epoch: ", maxEpoch);
 
     return generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
 }
 
 // Redirect the user to Google's OAuth login flow. The user will then be redirected back
-//     to the '/googlecallback' page where we'll parse the JWT and ask for a zkProof.
+//     to the '/googlecallback' page where we'll parse the JWT and get the zkLogin wallet and zkProof 
 const usezkLogin = async () => {
     const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!(GOOGLE_CLIENT_ID)) {
@@ -64,8 +59,8 @@ const usezkLogin = async () => {
 
     const maxEpoch = getMaxEpoch();
     const { epoch, epochDurationMs, epochStartTimestampMs } = await suiClient.getLatestSuiSystemState();
-    if (!maxEpoch || (Number(epoch) >= Number(maxEpoch))) {
-        console.log("Missing or expired max epoch value. Deleting any zkLogin session data and generating and loggin the user in with Google...");
+    if (!maxEpoch || (Number(epoch) > Number(maxEpoch))) {
+        console.log("Missing or expired max epoch value. Deleting any zkLogin session data and generating and logging the user in with Google...");
         clearZkLoginSessionData();
         const NONCE = await createNonce(Number(epoch));
         const REDIRECT_URI = 'http://localhost:3000/googlecallback';
@@ -73,8 +68,7 @@ const usezkLogin = async () => {
         window.location.href = GOOGLE_OAUTH_URL;
     } else {
         console.log("Found a valid maxEpcoh: ", maxEpoch, " so taking the user to the transaction page...");
-        const walletAddress = getZkWalletAddress();
-        window.location.href = `/transaction#${walletAddress}`;
+        window.location.href = `/transaction#${WalletType.ZkLogin}`;
     }
 }
 
@@ -95,17 +89,15 @@ const recoverExistingKeypair = async (): Promise<PasskeyKeypair | undefined> => 
 }
 
 const moveToTransactionPageWithKeyPair = (keypair: PasskeyKeypair, saveKeyPair: boolean = true) => {
-    const keypair_public_key = keypair.getPublicKey().toRawBytes()
-    console.log("Storing Passkey public key bytes: ", keypair_public_key);
-    storePasskeyKeypairPublicKey(keypair_public_key);
-    const walletAddress = keypair.getPublicKey().toSuiAddress();
-    storePasskeyWalletAddress(walletAddress);
-    console.log("Passkey wallet address: ", walletAddress);
-    window.location.href = `/transaction#${walletAddress}`;
+    storePasskeyKeypairPublicKey(keypair.getPublicKey().toRawBytes());
+    storePasskeyWalletAddress(keypair.getPublicKey().toSuiAddress());
+    window.location.href = `/transaction#${WalletType.Passkey}`;
 }
 
+// Attempt to recover an existing Passkey from local storage and then the user's device.
+//  If neither attempt works, generate a new passkey for the user.
+//  For more on Passkeys, see: https://sdk.mystenlabs.com/typescript/cryptography/passkey
 const fetchOrCreatePasskey = async () => {
-    clearPasskeyData();
 
     // 1. First, try to fetch an existing public key from local storage
     let keypair_public_key = getPasskeyKeypairPublicKey();
@@ -114,14 +106,18 @@ const fetchOrCreatePasskey = async () => {
     // 2. If not found, try to recover one. For now, this is an annyoing process for first time users.
     if (!keypair_public_key) {
         console.log("No passkey keypair public key found. Attempting to restore an existing passkey.");
-        passkeyKeypair = await recoverExistingKeypair();
+        try {
+            passkeyKeypair = await recoverExistingKeypair();
+        } catch (error) {
+            console.log("Error trying to recover existing passkey: ", error);
+        }
         if (passkeyKeypair) {
             console.log("storing recovered keypair and moving to tx page...");
             moveToTransactionPageWithKeyPair(passkeyKeypair);
         } else {
             // 3. If we still don't have a public key, it means we could not 
             //     recover one. So, we'll try to generate a new one.
-            console.log("no passkey keypair found or recovered");
+            console.log("No passkey keypair found or recovered. Attemping to generate a new one.");
             passkeyKeypair = await PasskeyKeypair.getPasskeyInstance(
                 new BrowserPasskeyProvider('Shinami Sponsored tx passkey', {
                     rpName: PASSKEY_RP_NAME,
@@ -131,14 +127,13 @@ const fetchOrCreatePasskey = async () => {
             if (!passkeyKeypair) {
                 throw new Error("Unable to generate keypair");
             } else {
-                console.log("storing newly generated keypair and moving to tx page...");
+                console.log("Storing newly generated keypair and moving to tx page...");
                 moveToTransactionPageWithKeyPair(passkeyKeypair);
             }
         }
     } else {
-        console.log("found an existing passkey keypair");
+        console.log("Found an existing passkey keypair.");
         const publicKeyBytes = getPasskeyKeypairPublicKey();
-        console.log("Get back Passkey public key bytes: ", publicKeyBytes);
         if (publicKeyBytes != null) {
             let passkeyKeypair = new PasskeyKeypair(publicKeyBytes, new BrowserPasskeyProvider('Sui Passkey Example', {
                 rpName: PASSKEY_RP_NAME,
@@ -156,11 +151,17 @@ const HomePage = () => {
             <div>
                 <h2>Shinami Sponsored Transactions with single-app Sui zkLogin and passkey wallets</h2>
                 <br />
-                <button onClick={() => fetchOrCreatePasskey()}>Use a passkey wallet with your phone</button>
+                <h3>Single-app zkLogin wallet (Google login)</h3>
+                <button onClick={() => usezkLogin()}>Use a zkLogin wallet</button>
+                <p>Only Google is implemented currently.</p>
                 <br />
                 <br />
                 <br />
-                <button onClick={() => usezkLogin()}>Use a zkLogin wallet with your Google login</button>
+                <h3>Single-app Passkey wallet</h3>
+                <button onClick={() => fetchOrCreatePasskey()}>Use a passkey wallet</button>
+                <p>If a Passkey wallet public key is not found in browser storage, you'll get a signing pop-ups to try to recover an existing key.</p>
+                <p> If you have made a passkey on this site before, sign it and then you'll get a second and final transaction to sign.</p>
+                <p> If you haven't made a passkey on this site before, exit out of the flow and you'll be asked to sign again to create a new key.</p>
             </div>
         </>
     );

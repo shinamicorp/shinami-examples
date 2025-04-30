@@ -9,8 +9,6 @@ import {
     ZkProverClient
 } from "@shinami/clients/sui";
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
-import { getExtendedEphemeralPublicKey } from '@mysten/sui/zklogin';
-import { fromHEX, toBase64, fromBase64, toHex } from "@mysten/sui/utils";
 
 
 import dotenvFlow from 'dotenv-flow';
@@ -38,14 +36,10 @@ ViteExpress.listen(app, 3000, () =>
     console.log("Server is listening on port 3000..."),
 );
 
-function base64ToBigInt(s: string): bigint {
-    return BigInt(`0x${toHex(fromBase64(s))}`);
-}
-
 
 // Endpoint to 
-// Send a JWT to Shinami's zkLogin Wallet Service and
-// 1. Create a wallet if no wallet is associated with the (iss, aud, sub, subWallet) quadruple
+//  Send a JWT to Shinami's zkLogin Wallet Service and create a wallet if no wallet is 
+//   associated with the (iss, aud, sub, subWallet) quadruple
 app.post('/getWalletSalt', async (req, res, next) => {
     try {
         console.log("calling getOrCreateZkLoginWallet");
@@ -63,27 +57,10 @@ app.post('/getWalletSalt', async (req, res, next) => {
 });
 
 
-// ToDos: 
-// 1. print out better error messages here without the double console.log() and then next(err)
-// 2. Make sure I'm serializing and then deserliazing my public key properly
-// 3. Once I get it working, print out my values and make them via a cURL command
-// 4. Then, update the docs to better explain the "extendedEphemeralPublicKey" parameter values and how to make it
-
+// Endpoint to
+//  Ask Shinami's prover service for a zkProof
 app.post('/getZkProof', async (req, res, next) => {
     try {
-        console.log("calling createZkLoginProof");
-        const publicKey = new Ed25519PublicKey(req.body.publicKey);
-        console.log("extended ephemeral keypair: ", getExtendedEphemeralPublicKey(publicKey));
-        console.log("extended ephemeral keypair as BigInt: ", base64ToBigInt(getExtendedEphemeralPublicKey(publicKey)));
-        console.log("BE public key B64: ", publicKey.toBase64());
-        console.log("jwt: ", req.body.jwt);
-        console.log("maxEpoch: ", req.body.maxEpoch);
-        console.log("randomness: ", BigInt(req.body.jwtRandomness));
-        console.log("salt: ", BigInt(req.body.salt));
-        console.log("randomness B64: ", btoa(req.body.jwtRandomness));
-        console.log("randomness B64 other: ", toBase64(fromHEX(BigInt(req.body.jwtRandomness).toString(16))));
-        console.log("salt B64: ", btoa(req.body.salt));
-        console.log("salt B64 other: ", toBase64(fromHEX(BigInt(req.body.salt).toString(16))));
         const zkProof = await proverClient.createZkLoginProof(
             req.body.jwt,
             Number(req.body.maxEpoch),
@@ -104,10 +81,9 @@ app.post('/getZkProof', async (req, res, next) => {
 
 
 // Endpoint to:
-// 1. Build a gasless move call
+// 1. Build a gasless move call transaction with the given user input.
 // 2. Sponsor it
 // 3. Return the sponsored tranaction to the FE
-// Build and sponsor a Move call transaction with the given user input.
 app.post('/buildSponsoredtx', async (req, res, next) => {
     try {
         console.log("building gasless tx");
@@ -134,9 +110,6 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 app.post('/executeSponsoredTx', async (req, res, next) => {
     try {
         console.log("Attemping to execute the tx...");
-        console.log("tx: ", req.body.tx);
-        console.log("Sponsor sig: ", req.body.sponsorSig);
-        console.log("Sender sig: ", req.body.senderSig);
         const submitTxResp = await nodeClient.executeTransactionBlock({
             transactionBlock: req.body.txBytes,
             signature: [req.body.senderSig, req.body.sponsorSig]

@@ -16,10 +16,10 @@ import {
     clearZkLoginSessionData,
     getPasskeyKeypairPublicKey,
     PASSKEY_RP_NAME,
-    PASSKEY_RP_ID
+    PASSKEY_RP_ID,
+    WalletType
 } from "../common";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { fromBase64 } from "@mysten/sui/utils";
 import { genAddressSeed, getZkLoginSignature } from '@mysten/sui/zklogin';
 import { ZkLoginProof } from "../types";
 import { Transaction } from "@mysten/sui/transactions";
@@ -43,33 +43,32 @@ type AddCallEvent = {
     result: string;
 };
 
-const parseAddressFromURL = (url: string): string => {
-    console.log("Parsing the wallet address from the URL");
+
+const parseWalletTypeFromURL = (url: string): WalletType => {
+    console.log("Parsing the wallet type from the URL");
     const urlObject = new URL(url);
     const fragment = urlObject.hash.split("#");
     if (fragment.length == 2) {
-        return fragment[1];
+        return fragment[1] == WalletType.Passkey ? WalletType.Passkey : WalletType.ZkLogin;
     } else {
-        return "Address will be shown after transaction."
+        return WalletType.ZkLogin;
     }
 };
 
-enum WalletType {
-    ZkLogin = "zkLogin",
-    Passkey = "Passkey"
-}
 
 const TransactionPage = () => {
-    const URL_WALLET_ADDRESS = parseAddressFromURL(window.location.href);
+    const initialWalletType = parseWalletTypeFromURL(window.location.href);
     const [latestDigest, setLatestDigest] = useState<string>();
     const [latestResult, setLatestResult] = useState<string>();
     const [firstInt, setFirstInt] = useState<string>();
     const [secondInt, setsecondInt] = useState<string>();
     const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
-    const [walletType, setWalletType] = useState<WalletType>(WalletType.ZkLogin);
-    const [walletAddress, setWalletAddress] = useState<string>(URL_WALLET_ADDRESS);
+    const [walletType, setWalletType] = useState<WalletType>(initialWalletType);
+    const [walletAddress, setWalletAddress] = useState<string>("(shown after you click 'Make Move call')");
 
+    // Execute a transaction and update the page with the results
     const executeTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
+        // 1. Get the user-entered integers from the form.
         e.preventDefault();
         setnewSuccessfulResult(false);
         const form = e.currentTarget
@@ -83,6 +82,7 @@ const TransactionPage = () => {
         setFirstInt(x.toString());
         setsecondInt(y.toString());
 
+        // 2. Attempt to build, sponsor and execute a transaction.
         let suiTxResponse = undefined;
         try {
             suiTxResponse = await moveCallBEBuildBESubmit(x, y);
@@ -90,6 +90,7 @@ const TransactionPage = () => {
             if (!suiTxResponse || !suiTxResponse.digest) {
                 console.log("Unable to find a digest returned from the backend.");
             } else {
+                // 3. Poll a Full node until we have the transaction result and then update the page.
                 waitForTxAndUpdateResult(suiTxResponse.digest);
             }
         } catch (e) {
@@ -122,11 +123,17 @@ const TransactionPage = () => {
 
     const getSenderAddress = async (): Promise<string | null> => {
         if (walletType == WalletType.ZkLogin) {
-            const sender = getZkWalletAddress()
+            const sender = getZkWalletAddress();
+            if (sender != null) {
+                setWalletAddress(sender);
+            }
             console.log("Sender address (zkLogin wallet): ", sender);
             return sender;
         } else if (walletType == WalletType.Passkey) {
-            const sender = getPasskeyWalletAddress()
+            const sender = getPasskeyWalletAddress();
+            if (sender != null) {
+                setWalletAddress(sender);
+            }
             console.log("Sender address (Passkey wallet): ", sender);
             return sender;
         } else {
@@ -171,7 +178,6 @@ const TransactionPage = () => {
                 if (!zkProof) {
                     throw new Error("Transaction Page: no zkProof!");
                 }
-                // console.log("zkProof right before getting zkSignature: ", zkProof);
                 const maxEpoch = getMaxEpoch();
                 if (!maxEpoch) {
                     throw new Error("Transaction page: no max Epoch!");
@@ -186,15 +192,12 @@ const TransactionPage = () => {
             }
             return null;
         } else if (walletType == WalletType.Passkey) {
-            console.log("Getting passkey wallet signature...");
             const publicKeyBytes = getPasskeyKeypairPublicKey();
-            console.log("Get back Passkey public key bytes: ", publicKeyBytes);
             if (publicKeyBytes != null) {
                 let passkeyKeypair = new PasskeyKeypair(publicKeyBytes, new BrowserPasskeyProvider('Sui Passkey Example', {
                     rpName: PASSKEY_RP_NAME,
                     rpId: PASSKEY_RP_ID,
                 } as BrowserPasswordProviderOptions));
-                console.log("reconstructed keypair address: ", passkeyKeypair.toSuiAddress());
                 const signature = await Transaction.from(txString).sign(
                     { signer: passkeyKeypair }
                 );
@@ -209,13 +212,12 @@ const TransactionPage = () => {
     }
 
     // 1. Ask the backend to build and sponsor a Move call transction with the given user input.
-    // 2. Sign the sponsored transaction returned from the backend with the user's  wallet.
+    // 2. Sign the sponsored transaction returned from the backend with the user's wallet.
     // 3. Ask the backend to execute the signed transaction.
     // 4. Return the SuiTransactionBlockResponse to the caller.
     const moveCallBEBuildBESubmit = async (x: number, y: number): Promise<SuiTransactionBlockResponse | undefined> => {
         console.log("connectedWalletTxBEBuildBESubmit");
         const senderAddress = await getSenderAddress();
-        console.log(walletType, " sender address: ", senderAddress);
         const sponsorshipResp = await axios.post('/buildSponsoredtx', {
             x: x,
             y: y,
@@ -225,8 +227,6 @@ const TransactionPage = () => {
         const signature = await getSenderSignature(sponsorshipResp.data.txBytes);
         if (!signature) {
             throw new Error("Unable to generate signature!");
-        } else {
-            console.log("Obtained sender signature: ", signature);
         }
 
         const resp = await axios.post('/executeSponsoredTx', {
@@ -260,11 +260,12 @@ const TransactionPage = () => {
                 setWalletAddress(address);
             }
         }
+        setnewSuccessfulResult(false);
     }
 
     // Delete the user's zkLogin session data and return them to the homepage
     const logout = async (): Promise<undefined> => {
-        console.log("Removing zkLogin data from session storage and returning the user to the homepage.");
+        console.log("Removing zkLogin data from session storage and returning the user to the homepage...");
         clearZkLoginSessionData();
         window.location.href = "/";
     }
@@ -291,7 +292,7 @@ const TransactionPage = () => {
                         <label htmlFor="integerTwo">Second positive integer:</label>
                         <input type="number" name="integerTwo" id="integerTwo" required />
                     </div>
-                    <button type="submit">Make move call</button>
+                    <button type="submit">Make Move call</button>
                 </form>
                 <h3>Transaction result:</h3>
                 {newSuccessfulResult ?
