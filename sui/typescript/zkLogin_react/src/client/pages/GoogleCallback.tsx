@@ -31,12 +31,9 @@ const GoogleCallbackPage = () => {
         const params = new URLSearchParams(fragment);
         return params.get('id_token');
     };
-    console.log("Full URL: ", window.location.href);
     const jwt = parseJWTFromURL(window.location.href);
     if (!jwt) {
         throw new Error("unable to get JWT from URL!")
-    } else {
-        console.log("JWT: ", jwt);
     }
 
     const getSaltAndProof = async (jwt: string) => {
@@ -73,12 +70,9 @@ const GoogleCallbackPage = () => {
         storeZkSubValue(sub);
         storeSalt(salt);
         storeZkWalletAddress(walletAddress);
-        console.log("GoogleCallback page --salt: ", salt, " --walletAddress: ", walletAddress, " --aud: ", aud, " --sub: ", sub, " --emphemeralKeyPair.getPublicKey().toBase64(): ", emphemeralKeyPair.getPublicKey().toBase64());
+        // console.log("GoogleCallback page --salt: ", salt, " --walletAddress: ", walletAddress, " --aud: ", aud, " --sub: ", sub, " --emphemeralKeyPair.getPublicKey().toBase64(): ", emphemeralKeyPair.getPublicKey().toBase64());
 
         // 5. Ask the BE to call Shinami to generate a zkProof for this ephemeralKeypair session
-        const pKey = getExtendedEphemeralPublicKey(emphemeralKeyPair.getPublicKey());
-        console.log("Mysten generated extended ephemeralKeypair: ", pKey);
-
         const zkProof = await axios.post('/getZkProof', {
             jwt: jwt,
             maxEpoch: maxEpoch,

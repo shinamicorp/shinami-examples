@@ -12,6 +12,7 @@ import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 
 
 import dotenvFlow from 'dotenv-flow';
+import e from "express";
 
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
@@ -51,7 +52,7 @@ app.post('/getWalletSalt', async (req, res, next) => {
             sub: walletInfo.userId.keyClaimValue
         });
     } catch (err) {
-        console.log(err);
+        printJSONRPCErrorInfo(err);
         next(err);
     }
 });
@@ -73,7 +74,7 @@ app.post('/getZkProof', async (req, res, next) => {
             zkProof: zkProof.zkProof
         });
     } catch (err) {
-        console.log(err);
+        printJSONRPCErrorInfo(err);
         next(err);
     }
 });
@@ -97,7 +98,7 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
             sponsorSig: sponsoredTx.signature
         });
     } catch (err) {
-        console.log(err);
+        printJSONRPCErrorInfo(err);
         next(err);
     }
 });
@@ -117,7 +118,7 @@ app.post('/executeSponsoredTx', async (req, res, next) => {
 
         res.json(submitTxResp);
     } catch (err) {
-        console.log(err);
+        printJSONRPCErrorInfo(err);
         next(err);
     }
 });
@@ -143,4 +144,18 @@ async function buildGasslessMoveCall(x: number, y: number): Promise<GaslessTrans
             sui: nodeClient
         }
     );
+}
+
+type JSONRPCError = {
+    code: number,
+    message: string,
+    data: object
+}
+
+function printJSONRPCErrorInfo(error: any): void {
+    try {
+        console.log("Error code: ", error.code as JSONRPCError, " - message: ", error.message as JSONRPCError, " - data: ", error.data as JSONRPCError);
+    } catch {
+        console.log("Issue parsing error: ", error);
+    }
 }
