@@ -10,6 +10,13 @@ import {
 import { Box, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
+import {
+  buildGaslessTransaction,
+  GaslessTransaction
+} from "@shinami/clients/sui";
+const EXAMPLE_MOVE_PACKAGE_ID = import.meta.env.VITE_EXAMPLE_MOVE_PACKAGE_ID;
+
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -49,8 +56,10 @@ function App() {
     try {
       if (currentAccount) {
         suiTxResponse = await
-          connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
-        // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
+          // connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
+          // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
+          connectedWalletTXFEBuildFESubmit(x, y, currentAccount.address);
+        // connectedWalletTXFEBuildFESubmitTwo(x, y, currentAccount.address);
       }
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
@@ -138,6 +147,50 @@ function App() {
     return resp;
   }
 
+  const connectedWalletTXFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+    console.log("connectedWalletTXFEBuildFESubmit");
+
+    const gaslessTx = await buildGasslessMoveCall(x, y);
+    gaslessTx.sender = senderAddress;
+
+    console.log("FE passing gasslessTX to BE:", gaslessTx);
+    const sponsorshipResp = await axios.post('/sponsorTx', {
+      gaslessTx
+    });
+
+    const { signature } = await signTransaction({
+      transaction: sponsorshipResp.data.txBytes
+    });
+
+    const resp = await suiClient.executeTransactionBlock({
+      transactionBlock: sponsorshipResp.data.txBytes,
+      signature: [sponsorshipResp.data.sponsorSig, signature]
+    })
+    return resp;
+  }
+
+  const connectedWalletTXFEBuildFESubmitTwo = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+    console.log("connectedWalletTXFEBuildFESubmit");
+
+    const tx = await buildMoveCallTransaction(x, y);
+
+    console.log("FE passing tx to BE:", tx);
+    const sponsorshipResp = await axios.post('/sponsorTxTwo', {
+      tx,
+      sender: senderAddress
+    });
+
+    const { signature } = await signTransaction({
+      transaction: sponsorshipResp.data.txBytes
+    });
+
+    const resp = await suiClient.executeTransactionBlock({
+      transactionBlock: sponsorshipResp.data.txBytes,
+      signature: [sponsorshipResp.data.sponsorSig, signature]
+    })
+    return resp;
+  }
+
 
 
   // 1. Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
@@ -151,8 +204,54 @@ function App() {
       y: y,
       userId: "abc123"
     });
+
     return resp.data;
   }
+
+  // 1. Create a Transaction representing a Move call.
+  // 2. Build the transaction with "onlyTransactionKind: true"
+  // 3
+  // Source code for this example Move function:
+  // https://github.com/shinamicorp/shinami-typescript-sdk/blob/90f19396df9baadd71704a0c752f759c8e7088b4/move_example/sources/math.move#L13
+  const buildMoveCallTransaction = async (x: number, y: number): Promise<string> => {
+
+    // 1. Build the transaction 
+    const txb = new Transaction();
+    txb.moveCall({
+      target: `${EXAMPLE_MOVE_PACKAGE_ID}::math::add`,
+      arguments: [txb.pure.u64(x), txb.pure.u64(y)],
+    });
+
+
+    const gaslessPayloadBytes = await txb.build({ client: suiClient, onlyTransactionKind: true });
+
+    const gaslessPayloadBase64 = btoa(
+      gaslessPayloadBytes
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    return gaslessPayloadBase64;
+  }
+
+
+  // Build a GaslessTransaction representing a Move call.
+  // Source code for this example Move function:
+  // https://github.com/shinamicorp/shinami-typescript-sdk/blob/90f19396df9baadd71704a0c752f759c8e7088b4/move_example/sources/math.move#L13
+  async function buildGasslessMoveCall(x: number, y: number): Promise<GaslessTransaction> {
+
+    return await buildGaslessTransaction(
+      (txb) => {
+        txb.moveCall({
+          target: `${EXAMPLE_MOVE_PACKAGE_ID}::math::add`,
+          arguments: [txb.pure.u64(x), txb.pure.u64(y)],
+        });
+      },
+      {
+        sui: suiClient
+      }
+    );
+  }
+
 
 
 

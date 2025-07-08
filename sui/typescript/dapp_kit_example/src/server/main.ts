@@ -9,6 +9,7 @@ import {
   KeyClient,
   GaslessTransaction
 } from "@shinami/clients/sui";
+import { Transaction } from "@mysten/sui/transactions";
 import dotenvFlow from 'dotenv-flow';
 
 // Get our environmental variables from our .env.local file
@@ -74,6 +75,50 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 });
 
 
+// Endpoint to: 
+// 1. Sponsor a transaction built on the FE
+// 3. Return the sponsorship info the FE
+app.post('/sponsorTx', async (req, res, next) => {
+  try {
+    console.log("BE /sponsorTx");
+    const gt = req.body.gaslessTx;
+    console.log(gt);
+    const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
+
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Endpoint to: 
+// 1. Sponsor a transaction built on the FE
+// 3. Return the sponsorship info the FE
+app.post('/sponsorTxTwo', async (req, res, next) => {
+  try {
+    console.log("BE /sponsorTxTwo");
+    let tx = req.body.tx;
+    // let txTwo = Buffer.from(req.body.tx, 'ascii');
+    console.log("using tx: ", req.body.tx);
+    // console.log("txTwo: ", txTwo);
+    const transaction = Transaction.fromKind(tx);
+    const gaslessTx = await buildGaslessTransaction(transaction, { sender: req.body.sender });
+    // gaslessTx.sender = req.body.sender;
+    const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
+
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: sponsoredTx.signature
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Endpoint to:
 // 1. Build a gasless move call
