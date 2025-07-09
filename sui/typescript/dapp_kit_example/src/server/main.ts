@@ -100,15 +100,7 @@ app.post('/sponsorTx', async (req, res, next) => {
 // 3. Return the sponsorship info the FE
 app.post('/sponsorTxTwo', async (req, res, next) => {
   try {
-    console.log("BE /sponsorTxTwo");
-    let tx = req.body.tx;
-    // let txTwo = Buffer.from(req.body.tx, 'ascii');
-    console.log("using tx: ", req.body.tx);
-    // console.log("txTwo: ", txTwo);
-    const transaction = Transaction.fromKind(tx);
-    const gaslessTx = await buildGaslessTransaction(transaction, { sender: req.body.sender });
-    // gaslessTx.sender = req.body.sender;
-    const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
+    const sponsoredTx = await gasClient.sponsorTransaction({ txKind: req.body.tx, sender: req.body.sender });
 
     res.json({
       txBytes: sponsoredTx.txBytes,

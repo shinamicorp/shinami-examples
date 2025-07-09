@@ -58,8 +58,8 @@ function App() {
         suiTxResponse = await
           // connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
           // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
-          connectedWalletTXFEBuildFESubmit(x, y, currentAccount.address);
-        // connectedWalletTXFEBuildFESubmitTwo(x, y, currentAccount.address);
+          // connectedWalletTXFEBuildFESubmit(x, y, currentAccount.address);
+          connectedWalletTXFEBuildFESubmitTwo(x, y, currentAccount.address);
       }
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
@@ -221,8 +221,6 @@ function App() {
       target: `${EXAMPLE_MOVE_PACKAGE_ID}::math::add`,
       arguments: [txb.pure.u64(x), txb.pure.u64(y)],
     });
-
-
     const gaslessPayloadBytes = await txb.build({ client: suiClient, onlyTransactionKind: true });
 
     const gaslessPayloadBase64 = btoa(
