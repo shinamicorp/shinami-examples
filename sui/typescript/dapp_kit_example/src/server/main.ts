@@ -9,7 +9,6 @@ import {
   KeyClient,
   GaslessTransaction
 } from "@shinami/clients/sui";
-import { Transaction } from "@mysten/sui/transactions";
 import dotenvFlow from 'dotenv-flow';
 
 // Get our environmental variables from our .env.local file
@@ -77,12 +76,9 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 
 // Endpoint to: 
 // 1. Sponsor a transaction built on the FE
-// 3. Return the sponsorship info the FE
+// 2. Return the sponsorship info the FE
 app.post('/sponsorTx', async (req, res, next) => {
   try {
-    console.log("BE /sponsorTx");
-    const gt = req.body.gaslessTx;
-    console.log(gt);
     const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
 
     res.json({
@@ -95,22 +91,6 @@ app.post('/sponsorTx', async (req, res, next) => {
   }
 });
 
-// Endpoint to: 
-// 1. Sponsor a transaction built on the FE
-// 3. Return the sponsorship info the FE
-app.post('/sponsorTxTwo', async (req, res, next) => {
-  try {
-    const sponsoredTx = await gasClient.sponsorTransaction({ txKind: req.body.tx, sender: req.body.sender });
-
-    res.json({
-      txBytes: sponsoredTx.txBytes,
-      sponsorSig: sponsoredTx.signature
-    });
-
-  } catch (err) {
-    next(err);
-  }
-});
 
 // Endpoint to:
 // 1. Build a gasless move call
