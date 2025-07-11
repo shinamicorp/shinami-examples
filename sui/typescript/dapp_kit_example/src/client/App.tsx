@@ -57,7 +57,7 @@ function App() {
         suiTxResponse = await
           connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
         // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
-        // connectedWalletTXFEBuildFESubmit(x, y, currentAccount.address);
+        // connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
       }
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
@@ -145,12 +145,12 @@ function App() {
     return resp;
   }
 
-  // 1. Build a Move call transction with the given user input.
+  // 1. Build a Move call transaction with the given user input.
   // 2. Ask the backend to sponsor it
   // 3. Sign the sponsored transaction returned from the backend with the user's connected wallet.
-  // 4. Submit the transaction to Fullnode for execution from the frontend.
+  // 4. Submit the transaction to a Fullnode from the frontend.
   // 4. Return the SuiTransactionBlockResponse to the caller.
-  const connectedWalletTXFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+  const connectedWalletTxFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
     console.log("connectedWalletTXFEBuildFESubmit");
 
     const gaslessTx = await buildGasslessMoveCall(x, y);
