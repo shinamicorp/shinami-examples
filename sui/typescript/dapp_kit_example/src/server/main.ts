@@ -74,6 +74,23 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 });
 
 
+// Endpoint to: 
+// 1. Sponsor a transaction built on the FE
+// 2. Return the sponsorship info the FE
+app.post('/sponsorTx', async (req, res, next) => {
+  try {
+    const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
+
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 // Endpoint to:
 // 1. Build a gasless move call
