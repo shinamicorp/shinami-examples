@@ -34,7 +34,7 @@ let fundedSenderAccount = null;
 //   c. Set the value of `PKEY_ONE` to the "Sponsor private key" value printed to the console in Step 1.
 
 const PKEY_ONE = "ed25519-priv-0x...";
-const fundedSenderAccountAddress = "Sponsor address";// "0x2a6b9f4d538174e0b30cecf2241a14803d256f38635346bfd7cca1eab9686336";
+const fundedSenderAccountAddress = "Sponsor address";
 fundedSenderAccount = new SingleKeyAccount({
     privateKey: new Ed25519PrivateKey(PKEY_ONE)
 });
