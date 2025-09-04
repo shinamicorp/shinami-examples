@@ -118,7 +118,7 @@ if (fundedSenderAccount != null) {
             transaction: feePayerTx
         });
 
-        // 9. Wait for the transaction to execute and print its status 
+        // 12. Wait for the transaction to execute and print its status 
         const executedTransaction = await aptosClient.waitForTransaction({
             transactionHash: pendingTransaction.hash,
         });
