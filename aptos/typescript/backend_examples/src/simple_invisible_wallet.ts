@@ -43,6 +43,7 @@ console.log("Sponsor private key : ", PrivateKey.formatPrivateKey(Buffer.from(ac
 
 
 // 1. Import everything we need from Shinami wallet management
+import axios from 'axios';
 import {
     KeyClient,
     WalletClient,
@@ -50,8 +51,8 @@ import {
 } from "@shinami/clients/aptos";
 
 // 2. Copy your access key value
-const APTOS_WALLET_KEY = "API_KEY";
-const APTOS_NODE_KEY = "API_KEY";
+const APTOS_WALLET_KEY = "us1_aptos_1c20b85ec56f4abc98483fe72f8d28a3";// "API_KEY";
+const APTOS_NODE_KEY = "aptos_testnet_2c3c34d54f764a9883f3676d774d2d9f";// "API_KEY";
 
 // 3. Set up a walletId and its associated secret. We're using a fixed example of one test user's wallet. Your
 //    app should figure out the best way to manage its wallet IDs and secrets.
@@ -64,7 +65,6 @@ const walletClient = new WalletClient(APTOS_WALLET_KEY);
 
 // 5. Insitatiate a node client with some Node Service (here, Shinami)
 const aptosClient = createAptosClient(APTOS_NODE_KEY);
-
 
 if (fundedSenderAccount != null) {
 
@@ -126,3 +126,29 @@ if (fundedSenderAccount != null) {
         console.log("Transaction status:", executedTransaction.vm_status);
     }
 }
+
+
+// // Simple Shinami Wallet Service request example not using our SDK
+// const WALLET_SERVICE_URL = 'https://api.us1.shinami.com/aptos/wallet/v1';
+// const payload = {
+//     jsonrpc: '2.0',
+//     method: 'wal_getWallet',
+//     params: [
+//         WALLET_ID_1
+//     ],
+//     id: 1
+// };
+
+// axios.post(WALLET_SERVICE_URL, payload, {
+//     headers: {
+//         'Content-Type': 'application/json',
+//         'X-API-Key': `${APTOS_WALLET_KEY}`
+//     }
+// })
+//     .then(response => {
+//         console.log('JSON-RPC Response:', response.data);
+//         // Process the response data, which will also be in JSON-RPC format
+//     })
+//     .catch(error => {
+//         console.error('Error making JSON-RPC request:', error);
+//     });
