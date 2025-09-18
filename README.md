@@ -1,5 +1,5 @@
 # Shinami Service Examples
-Code examples for using Shinami's Services. Pairs with the [tutorials on our docs site](https://docs.shinami.com/docs/guides-overview#integrate-a-product).
+Code examples for using Shinami's Services. Pairs with the [tutorials on our docs site](https://docs.shinami.com/developer-guides/overview).
 
 ## Aptos services sample code
 - [Backend-only examples](https://github.com/shinamicorp/shinami-examples/tree/main/aptos/typescript/backend_examples) for using Shinami's Gas Station for feePayer transaction gas fee sponsorship and Invisible Wallets (embedded, NFT wallets for your Web2-native users).  Uses the [`@aptos-labs/ts-sdk`](https://www.npmjs.com/package/@aptos-labs/ts-sdk) and [`@shinami/clients`](https://www.npmjs.com/package/@shinami/clients) TypeScript SDKs.
