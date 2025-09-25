@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@aptos-labs/ts-sdk": "^5.1.0",
+    "axios": "^1.12.2"
+  },
+  "type": "module"
+}
