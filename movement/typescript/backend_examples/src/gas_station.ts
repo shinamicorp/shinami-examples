@@ -42,35 +42,27 @@ fundedSenderAccount = new SingleKeyAccount({
 // ****
 
 
-const config = new AptosConfig({
-    network: Network.CUSTOM,
-    fullnode: 'https://testnet.bardock.movementnetwork.xyz/v1',
-    faucet: 'https://faucet.testnet.bardock.movementnetwork.xyz/',
-});
-// Initialize the Aptos client
-const aptos = new Aptos(config);
 
+// const tx = await aptos.transaction.build.simple({
+//     sender: fundedSenderAccountAddress,
+//     withFeePayer: false,
+//     data: {
+//         function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
+//         functionArguments: ["hello"]
+//     }
+// });
 
-const tx = await aptos.transaction.build.simple({
-    sender: fundedSenderAccountAddress,
-    withFeePayer: false,
-    data: {
-        function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
-        functionArguments: ["hello"]
-    }
-});
+// const pendingTransaction = await aptos.signAndSubmitTransaction({
+//     signer: fundedSenderAccount,
+//     transaction: tx
+// });
 
-const pendingTransaction = await aptos.signAndSubmitTransaction({
-    signer: fundedSenderAccount,
-    transaction: tx
-});
-
-// Wait for the transaction to execute and print its status 
-const executedTransaction = await aptos.waitForTransaction({
-    transactionHash: pendingTransaction.hash,
-});
-console.log("\nTransaction hash:", executedTransaction.hash);
-console.log("Transaction status:", executedTransaction.vm_status);
+// // Wait for the transaction to execute and print its status 
+// const executedTransaction = await aptos.waitForTransaction({
+//     transactionHash: pendingTransaction.hash,
+// });
+// console.log("\nTransaction hash:", executedTransaction.hash);
+// console.log("Transaction status:", executedTransaction.vm_status);
 
 
 
@@ -90,6 +82,7 @@ import {
     PrivateKey,
     PrivateKeyVariants
 } from "@aptos-labs/ts-sdk";
+import axios from 'axios';
 // import { readFileSync } from "fs";
 
 // Create a Shinami Gas Station client for sponsoring our transactions 
@@ -102,19 +95,18 @@ import {
 // Code for generating two reusable, funded accounts for testing purposes
 
 // Step 1: uncomment the next six lines. Save the file, transpile with tsc, and run with node build/gas_station.js
-// const accountOne = await generateSingleKeyAccountEd25519();
-// console.log("Address 1: ", accountOne.accountAddress.toString());
-// console.log("Private key 1: ", PrivateKey.formatPrivateKey(Buffer.from(accountOne.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
-// const accountTwo = await generateSingleKeyAccountEd25519();
-// console.log("Address 2: ", accountTwo.accountAddress.toString());
-// console.log("Private key 2: ", PrivateKey.formatPrivateKey(Buffer.from(accountTwo.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
+const accountOne = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
+console.log("Address 1: ", accountOne.accountAddress.toString());
+console.log("Private key 1: ", PrivateKey.formatPrivateKey(Buffer.from(accountOne.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
+const accountTwo = SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
+console.log("Address 2: ", accountTwo.accountAddress.toString());
+console.log("Private key 2: ", PrivateKey.formatPrivateKey(Buffer.from(accountTwo.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
 
 // End step 1
 
-// Step 2: visit the Aptos Testnet faucet page at https://aptos.dev/en/network/faucet
-//   and request APT for each of the two addresses that were printed to the console from
+//  Step 2: Movement Testnet faucet page at https://faucet.movementnetwork.xyz/ and request
+//   MOVE for each of the two addresses that were printed to the console from
 //   step 1. You may need to refresh the page after your first request.
-//   CAUTION: the faucet currently has a limit of 5 requests per day.
 
 
 // Step 3:
@@ -135,6 +127,15 @@ import {
 // End step 3
 
 // ****
+
+
+const config = new AptosConfig({
+    network: Network.CUSTOM,
+    fullnode: 'https://testnet.bardock.movementnetwork.xyz/v1',
+    faucet: 'https://faucet.testnet.bardock.movementnetwork.xyz/',
+});
+// Initialize the Aptos client
+const movementNode = new Aptos(config);
 
 //
 // -- Choose which sample code function to use to generate a PendingTransactionResponse //
@@ -171,9 +172,14 @@ async function sponsorTransactionSimple(): Promise<PendingTransactionResponse> {
     let transaction = await buildSimpleMoveCallTransaction(sender.accountAddress);
 
     // 3. Sponsor the transaction with Shinami Gas Station.
-    let feePayerAuthenticator = await gasStationClient.sponsorTransaction(transaction);
-    // Note that the SDK updates the transaction's feePayer address on a successful sponsorship
-    console.log("\ntransaction.feePayerAddress post-sponsorship:", transaction.feePayerAddress);
+    // let feePayerAuthenticator = await gasStationClient.sponsorTransaction(transaction);
+    // // Note that the SDK updates the transaction's feePayer address on a successful sponsorship
+    // console.log("\ntransaction.feePayerAddress post-sponsorship:", transaction.feePayerAddress);
+
+    const feePayerAuthenticator = await axios.post('/buildAndSponsorTx', {
+        message,
+        sender: senderAddress
+    });
 
     // 4. Generate the sender's signature. 
     const senderAuthenticator = aptosClient.transaction.sign({
@@ -312,15 +318,6 @@ async function checkFundBalanceAndDepositIfNeeded(fundedSenderAccount: SingleKey
 }
 
 
-//
-// Helper function to generate a SingleKeyAccount for easy use with this tutorial.
-//  Not meant as best practice - your app should have its own way of managing Accounts and keys.
-//
-async function generateSingleKeyAccountEd25519(): Promise<SingleKeyAccount> {
-    return SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
-}
-
-
 // 
 // Build a SimpleTransaction with a fee payer. The transaction calls a function 
 //  on a Move module we've deployed to Testnet.
@@ -370,3 +367,11 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
 //     console.log(transaction);
 //     return transaction;
 // }
+
+//
+// Helper function to generate a SingleKeyAccount for easy use with this tutorial.
+//  Not meant as best practice - your app should have its own way of managing Accounts and keys.
+//
+async function generateSingleKeyAccountEd25519(): Promise<SingleKeyAccount> {
+    return SingleKeyAccount.generate({ scheme: SigningSchemeInput.Ed25519 });
+}
