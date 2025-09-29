@@ -232,7 +232,11 @@ function App() {
       <Box>
         <h3>Transaction result:</h3>
         {newSuccessfulResult ?
-          <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+          <p>
+            <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+            <br />
+            <a href={`https://testnet.suivision.xyz/txblock/${latestDigest}`} target="_blank">[View on SuiVision]</a>
+          </p>
           :
           <label>N/A</label>
         }

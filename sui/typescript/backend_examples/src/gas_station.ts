@@ -102,7 +102,7 @@ async function clockMoveCallGaslessTransaction(): Promise<GaslessTransaction> {
 //    the lowest latency possible, especially if you already make a sui_dryRunTransactionBlock request, 
 //    manual budgeting makes sense.
 //  2. Building the transaction offline: https://docs.sui.io/guides/developer/sui-101/building-ptb#building-offline
-//      This can save a few requests that would otherwise get made: https://docs.shinami.com/docs/transaction-block-build-requests
+//      This can save a few requests that would otherwise get made: https://docs.shinami.com/developer-guides/sui/move-guides/transaction-block-build-requests
 //      Note however that those requests are extremely fast for us to fulfill once they hit our servers, so this is only a latency 
 //      concern if your servers are geographically far from one of our Fullnodes. 
 async function clockMoveCallGaslessTransactionOfflineBuildManualBudget(): Promise<GaslessTransaction> {
@@ -120,7 +120,7 @@ async function clockMoveCallGaslessTransactionOfflineBuildManualBudget(): Promis
       });
     }, // 'buildGaslessTransaction' includes a Transaction.build() call. We don't pass in a node client since we're building offline.
     {
-      // See our manual bugeting tips: https://docs.shinami.com/docs/sponsored-transaction-typescript-tutorial#tips-for-setting-your-sponsorship-budget
+      // See our manual bugeting tips: https://docs.shinami.com/developer-guides/sui/tutorials/gas-station-backend-only#tips-for-setting-your-sponsorship-budget
       gasBudget: 15_000_000
     }
   );
@@ -167,7 +167,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
   const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
 
   // Deposit address can be null - see our Help Center for how to generate an address: 
-  //  https://docs.shinami.com/docs/sui-gas-station-faq
+  //  https://docs.shinami.com/help-center/sui/gas-station-faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund%3F
   if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_MIST)) {
     // We're not actually checking it's a SUI coin we're transferring, which you should do.
     // We're also going to sponsor this with the gas fund we're depositing to, which only
@@ -258,7 +258,7 @@ async function clockMoveCallGaslessTransactionAlternateVersion(): Promise<Gasles
   // convert the byte array to a base64 encoded string
   const gaslessPayloadBase64 = btoa(
     gaslessPayloadBytes
-      .reduce((data, byte) => data + String.fromCharCode(byte), '')
+      .reduce((data: string, byte: number) => data + String.fromCharCode(byte), '')
   );
 
   // return a GaslessTransaction 
