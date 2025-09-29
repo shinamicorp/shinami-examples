@@ -11,7 +11,7 @@ import {
 } from "@shinami/clients/sui";
 
 
-// 2. Copy your access key value
+// 2. Copy your access key value. Must have Testnet rights to all Shinami services.
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}"
 
 
@@ -83,7 +83,7 @@ if (shinamiResponse.data) {
   console.log("Shinami sticky-routing read object version right after the transaction: ", shinamiResponse.data.version);
 }
 
-// Therefore, this transaction will usually produce the "Object ID ... is not available for consumption" error due 
+// Therefore, this transaction will usually produce the "Object ID ... is not available for consumption" -32002 error due 
 //  to this stale information. It will occasionallly succeed because consensus is fast and we've added the delay 
 //  we added making the two calls to Fullnodes above.
 try {
@@ -119,7 +119,7 @@ if (updatedObjInfo) {
 //  is the same one that we then use to read from (since we're using the same API key and IP address). 
 //  This guarantees to us that the effects of the transaction we waited for are reflected in our reads.
 // For more on sticky-routing, see 
-//   https://docs.shinami.com/docs/authentication-and-api-keys#node-service-sticky-routing
+//   https://docs.shinami.com/developer-guides/core-integration-topics/authentication-and-api-keys#node-service-sticky-routing
 
 // Example 1: you can now make a read knowing that the transaction's effects will be reflected.
 const walletContents = await shinamiNodeClient.getOwnedObjects({

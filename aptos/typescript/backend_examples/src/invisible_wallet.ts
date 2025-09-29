@@ -13,7 +13,7 @@ import {
     createAptosClient
 } from "@shinami/clients/aptos";
 
-// 2. Copy your access key value
+// 2. Copy your access key value. Must have rights to all Aptos services on Testnet.
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
 // 3. Set up a walletId and its associated secret. Just for the tutorial. Your
@@ -51,7 +51,8 @@ const walletAddress = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND, INITIA
 const simpleTx = await simpleMoveCallTransaction(walletAddress);
 
 // 8. Sign, sponsor, and submit the transaction
-const pendingTx = await signer.executeGaslessTransaction(simpleTx);
+const pendingTx =
+    await signer.executeGaslessTransaction(simpleTx);
 // await signSponsorAndSubmitTransactionInTwoSteps(signer, simpleTx)
 
 // 9. Wait for the transaction to execute and print its status 

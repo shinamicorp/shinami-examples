@@ -256,7 +256,11 @@ function App() {
       </form>
       <h3>Transaction result:</h3>
       {newSuccessfulResult ?
-        <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+        <p>
+          <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+          <br />
+          <a href={`https://explorer.aptoslabs.com/txn/${latestDigest}?network=testnet`} target="_blank">[View on Aptos Exlorer]</a>
+        </p>
         :
         <label>Latest Successful Digest: N/A</label>
       }
