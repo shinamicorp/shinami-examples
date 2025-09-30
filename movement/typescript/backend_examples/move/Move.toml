@@ -8,8 +8,8 @@ authors = []
 [dev-addresses]
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "testnet"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
