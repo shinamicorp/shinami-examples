@@ -116,3 +116,6 @@ aptos/typescript/backend_examples/move/build/
 # Movement Move build output
 movement/move/build/
 movement/typescript/backend_examples/move/build
+
+# Movement Move config files
+movement/move/.movement
