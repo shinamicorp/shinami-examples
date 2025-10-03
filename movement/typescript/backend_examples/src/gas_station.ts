@@ -1,35 +1,3 @@
-
-// import axios from 'axios';
-// const SHINAMI_GAS_STATION_API = 'https://api.dev.shinami.com/movement/gas/v1/';
-// const HEADERS = {
-//     'X-API-Key': 'dev_movement_testnet_b04ca09113b84a5197733fe761220e2f',
-//     'Content-Type': 'application/json'
-// };
-
-// let feePayerAuthenticator = null;
-
-// const resp = await axios.post(
-//     SHINAMI_GAS_STATION_API,
-//     {
-//         jsonrpc: '2.0',
-//         method: 'gas_sponsorTransaction',
-//         params: [
-//             transaction.bcsToHex().toString()
-//         ],
-//         id: 1
-//     },
-//     { headers: HEADERS }
-// ).then(response => {
-//     console.log(response.data);
-//     feePayerAuthenticator = response.data.result;
-// }).catch(error => {
-//     console.error(error);
-// });
-
-
-////////////
-
-
 import {
     AccountAddress,
     Aptos,
@@ -48,18 +16,18 @@ import {
 import { readFileSync } from "fs";
 import { GasStationClient } from "@shinami/clients/aptos";
 
-// Create a Shinami Gas Station client for sponsoring our transactions 
-//  and a Shinami REST API client for building and submitting them.
-//  You'll need an access key with Gas Station and Node Service rights on Testnet.
+// Create a Shinami Gas Station client for sponsoring transactions 
+//  and a Movement node client for building and submitting them.
+//  You'll need an access key with Gas Station rights on Testnet.
 const SHINAMI_TESTNET_GAS_STATION_API_KEY = "{{MOVEMENT_TESTNET_GAS_STATION_API_ACCESS_KEY}}";
 const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_STATION_API_KEY);
 
+// Initialize the Movement client
 const config = new AptosConfig({
     network: Network.CUSTOM,
-    fullnode: 'https://testnet.bardock.movementnetwork.xyz/v1',
-    faucet: 'https://faucet.testnet.bardock.movementnetwork.xyz/',
+    fullnode: 'https://testnet.movementnetwork.xyz/v1',
+    faucet: 'https://faucet.testnet.movementnetwork.xyz/',
 });
-// Initialize the Aptos client
 const movementClient = new Aptos(config);
 
 
@@ -240,20 +208,21 @@ async function sponsorAndSubmitSignedTransactionMultiAgent(fundedSenderAccount: 
 
 
 //
-// Check a fund's balance and deposit more APT in the fund if it's low
+// Check a fund's balance and deposit more MOVE in the fund if it's low
 //
 async function checkFundBalanceAndDepositIfNeeded(fundedSenderAccount: SingleKeyAccount): Promise<PendingTransactionResponse | undefined> {
-    const MIN_FUND_BALANCE_OCTA = 1_000_000_000; // 10 APT
+    const MIN_FUND_BALANCE_OCTA = 1_000_000_000; // 10 MOVE
     const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
+    console.log("Fund balance not in use (in Move):", (balance - inFlight) / 100_000_000);
 
     // You'll want to deposit more than 1000 Octa, and what you want may be dynamic based on the
     //  current (balance - inFlight) amount, etc. This is just a simple example.
     const STANDARD_DEPOSIT_AMOUNT = 1000;
 
     // Deposit address can be null - see our Help Center for how to generate an address: 
-    //   https://docs.shinami.com/help-center/aptos/gas-station-faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund%3F
+    //   https://docs.shinami.com/help-center/movement/gas-station-faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund%3F
     if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
-        // Create a SimpleTransaction that transfers APT from the sender to your Gas Station fund
+        // Create a SimpleTransaction that transfers MOVE from the sender to your Gas Station fund
         const transferTx = await movementClient.transferCoinTransaction({
             sender: fundedSenderAccount.accountAddress,
             recipient: depositAddress,
@@ -302,7 +271,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
         }
     });
 
-    console.log("\nResponse from aptos.transaction.build.simple()");
+    console.log("\nResponse from movementClient.transaction.build.simple()");
     console.log(transaction);
     return transaction;
 }
@@ -331,7 +300,7 @@ async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondar
         }
     });
 
-    console.log("\nResponse from aptos.transaction.build.multiAgent()");
+    console.log("\nResponse from movementClient.transaction.build.multiAgent()");
     console.log(transaction);
     return transaction;
 }
