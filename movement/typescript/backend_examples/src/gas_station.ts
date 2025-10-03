@@ -34,7 +34,8 @@ const movementClient = new Aptos(config);
 // **** 
 // Code for generating two reusable, funded accounts for testing purposes
 
-// Step 1: uncomment the next six lines. Save the file, transpile with tsc, and run with node build/gas_station.js
+// Step 1: uncomment the next six lines of code. Save the file, transpile with tsc, and run with node build/gas_station.js
+
 // const accountOne = await generateSingleKeyAccountEd25519();
 // console.log("Address 1: ", accountOne.accountAddress.toString());
 // console.log("Private key 1: ", PrivateKey.formatPrivateKey(Buffer.from(accountOne.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
@@ -42,7 +43,6 @@ const movementClient = new Aptos(config);
 // console.log("Address 2: ", accountTwo.accountAddress.toString());
 // console.log("Private key 2: ", PrivateKey.formatPrivateKey(Buffer.from(accountTwo.privateKey.toUint8Array()).toString('hex'), PrivateKeyVariants.Ed25519));
 
-// End step 1
 
 // Step 2: visit the Movement Testnet faucet page at https://faucet.movementnetwork.xyz/ and 
 //   request MOVE for each of the two addresses that were printed to the console from step 1.
@@ -63,7 +63,6 @@ const movementClient = new Aptos(config);
 //     privateKey: new Ed25519PrivateKey(PKEY_TWO)
 // });
 
-// End step 3
 
 // ****
 
@@ -198,7 +197,7 @@ async function sponsorAndSubmitSignedTransactionMultiAgent(fundedSenderAccount: 
         transaction
     });
 
-    // 3s. Ask Shinami to sponsor and submit the transaction
+    // 3. Ask Shinami to sponsor and submit the transaction
     return await gasStationClient.sponsorAndSubmitSignedTransaction(
         transaction,
         senderAuthenticator,
@@ -264,7 +263,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
         withFeePayer: true,
         data: {
             function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
-            functionArguments: ["hello"]
+            functionArguments: ["bye"]
         },
         options: {
             expireTimestamp: expirationSeconds
@@ -281,8 +280,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
 //
 // Build a multi-agent script transaction with one secondary signer and a fee payer.
 //
-async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondarySigner: AccountAddress,
-    expirationSeconds?: number): Promise<MultiAgentTransaction> {
+async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondarySigner: AccountAddress, expirationSeconds?: number): Promise<MultiAgentTransaction> {
 
     let buffer = readFileSync("./move/build/test/bytecode_scripts/unfair_swap_coins.mv");
     let bytecode = Uint8Array.from(buffer);
