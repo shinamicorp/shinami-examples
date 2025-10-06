@@ -2,7 +2,7 @@ import express from "express";
 import ViteExpress from "vite-express";
 import {
   GasStationClient
-} from "@shinami/clients/movement";
+} from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
 import {
@@ -30,8 +30,8 @@ const gasClient = new GasStationClient(GAS_STATION_TESTNET_BE_KEY);
 
 const config = new AptosConfig({
   network: Network.CUSTOM,
-  fullnode: 'https://testnet.bardock.movementnetwork.xyz/v1',
-  faucet: 'https://faucet.testnet.bardock.movementnetwork.xyz/',
+  fullnode: 'https://testnet.movementnetwork.xyz/v1',
+  faucet: 'https://faucet.testnet.movementnetwork.xyz/',
 });
 // Initialize the Aptos client
 const movementClient = new Aptos(config);
@@ -162,7 +162,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: s
     sender: sender,
     withFeePayer: true,
     data: {
-      function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+      function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
       functionArguments: [new MoveString(message)]
     },
     options: {
