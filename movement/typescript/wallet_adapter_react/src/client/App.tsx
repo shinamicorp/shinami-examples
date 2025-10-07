@@ -55,9 +55,9 @@ function App() {
     try {
       if (currentAccount) {
         pendingTxResponse =
-          // await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
-          //  await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
-          await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
+          await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
+        // await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
+        // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
         console.log("No connected wallet detected.");
@@ -85,7 +85,7 @@ function App() {
 
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
-        if (executedTransaction.events[element].type == "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::MessageChange") {
+        if (executedTransaction.events[element].type == "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::MessageChangeEvent") {
           setLatestResult(executedTransaction.events[element].data.to_message);
         }
       }
@@ -101,26 +101,26 @@ function App() {
   // 2. Obtain the sender signature over the transaction returned from the BE
   // 3. Submit the transaction, along with the sender and sponsor (feePayer) signatures. 
   //     Return the PendingTransactionResponse to the caller
-  // const connectedWalletTxBEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
-  //   // Step 1: Request a transaction and sponsorship from the BE
-  //   console.log("connectedWalletTxBEBuildFESubmit");
-  //   const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
-  //     message,
-  //     sender: senderAddress
-  //   });
+  const connectedWalletTxBEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+    // Step 1: Request a transaction and sponsorship from the BE
+    console.log("connectedWalletTxBEBuildFESubmit");
+    const sponsorshipResp = await axios.post('/buildAndSponsorTx', {
+      message,
+      sender: senderAddress
+    });
 
-  //   // Step 2: Obtain the sender signature over the transaction after deserializing it
-  //   const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
-  //   const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
+    // Step 2: Obtain the sender signature over the transaction after deserializing it
+    const simpleTx = SimpleTransaction.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.simpleTx).toUint8Array()));
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
-  //   // Step 3: Submit the transaction along with both signatures and return the response to the caller
-  //   const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-  //   return await movementClient.transaction.submit.simple({
-  //     transaction: simpleTx,
-  //     senderAuthenticator: senderSig.authenticator,
-  //     feePayerAuthenticator: sponsorSig,
-  //   });
-  // }
+    // Step 3: Submit the transaction along with both signatures and return the response to the caller
+    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+    return await movementClient.transaction.submit.simple({
+      transaction: simpleTx,
+      senderAuthenticator: senderSig.authenticator,
+      feePayerAuthenticator: sponsorSig,
+    });
+  }
 
 
   // 1. Ask the BE to build and sponsor a SimpleTransaction
@@ -158,34 +158,34 @@ function App() {
   // 3. Ask the BE to sponsor the transaction
   // 4. Update the transaction's feePayer address
   // 5. Submit the transaction and associated signatures. Return the PendingTransactionResponse to the caller
-  // const connectedWalletTxFEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
-  //   console.log("connectedWalletTxFEBuildFESubmit");
-  //   // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
-  //   const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
-  //   const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+  const connectedWalletTxFEBuildFESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+    console.log("connectedWalletTxFEBuildFESubmit");
+    // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
+    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+    const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
-  //   // Step 2: Obtain the sender signature over the transaction 
-  //   const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
+    // Step 2: Obtain the sender signature over the transaction 
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
-  //   // Step 3: Request a BE sponsorship
-  //   const sponsorshipResp = await axios.post('/sponsorTx', {
-  //     transaction: simpleTx.bcsToHex().toString()
-  //   });
+    // Step 3: Request a BE sponsorship
+    const sponsorshipResp = await axios.post('/sponsorTx', {
+      transaction: simpleTx.bcsToHex().toString()
+    });
 
-  //   // Step 4: Update the transaction's feePayerAddress returned from the BE (after deserializing it)
-  //   //         (this could technically come after signing but before submitting)
-  //   const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.feePayerAddress).toUint8Array()));
-  //   simpleTx.feePayerAddress = feePayerAddress;
+    // Step 4: Update the transaction's feePayerAddress returned from the BE (after deserializing it)
+    //         (this could technically come after signing but before submitting)
+    const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.feePayerAddress).toUint8Array()));
+    simpleTx.feePayerAddress = feePayerAddress;
 
-  //   // Step 5: Submit the transaction along with both signatures (after deserializing the feePayer signature returned from the BE)
-  //   //         and return the response to the caller.
-  //   const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-  //   return await movementClient.transaction.submit.simple({
-  //     transaction: simpleTx,
-  //     senderAuthenticator: senderSig.authenticator,
-  //     feePayerAuthenticator: sponsorSig
-  //   });
-  // }
+    // Step 5: Submit the transaction along with both signatures (after deserializing the feePayer signature returned from the BE)
+    //         and return the response to the caller.
+    const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
+    return await movementClient.transaction.submit.simple({
+      transaction: simpleTx,
+      senderAuthenticator: senderSig.authenticator,
+      feePayerAuthenticator: sponsorSig
+    });
+  }
 
 
 
@@ -193,24 +193,24 @@ function App() {
   // 2. Obtain the sender signature over the transaction (with the special `0x0` feePayer address)
   // 3. Ask the BE to sponsor and submit the transaction (along with the sender auth)
   //    Return the PendingTransactionResponse to the caller
-  // const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
-  //   console.log("connectedWalletTxFEBuildBESubmit");
-  //   // Step 1: Build a feePayer SimpleTransaction. Set a five min expiration to be safe 
-  //   //         since we'll wait on a user signature (SDK default = 20 seconds)
-  //   const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
-  //   const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+  const connectedWalletTxFEBuildBESubmit = async (message: string, senderAddress: string): Promise<PendingTransactionResponse> => {
+    console.log("connectedWalletTxFEBuildBESubmit");
+    // Step 1: Build a feePayer SimpleTransaction. Set a five min expiration to be safe 
+    //         since we'll wait on a user signature (SDK default = 20 seconds)
+    const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
+    const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
 
-  //   // Step 2: Obtain the sender signature over the transaction 
-  //   const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
+    // Step 2: Obtain the sender signature over the transaction 
+    const senderSig = await signTransaction({ transactionOrPayload: simpleTx });
 
-  //   // Step 3: Request that the BE sponsor and submit the transaction and return the 
-  //   //          PendingTransactionResponse in the response to the caller
-  //   const sponsorSubmitResp = await axios.post('/sponsorAndSubmitTx', {
-  //     transaction: simpleTx.bcsToHex().toString(),
-  //     senderAuth: senderSig.authenticator.bcsToHex().toString()
-  //   });
-  //   return sponsorSubmitResp.data.pendingTx;
-  // }
+    // Step 3: Request that the BE sponsor and submit the transaction and return the 
+    //          PendingTransactionResponse in the response to the caller
+    const sponsorSubmitResp = await axios.post('/sponsorAndSubmitTx', {
+      transaction: simpleTx.bcsToHex().toString(),
+      senderAuth: senderSig.authenticator.bcsToHex().toString()
+    });
+    return sponsorSubmitResp.data.pendingTx;
+  }
 
 
 
@@ -234,7 +234,7 @@ function App() {
 
   return (
     <>
-      <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
+      <h1>Shinami Sponsored Transactions on Movement</h1>
       <h3>Set a short message</h3>
       <form onSubmit={executeTransaction}>
         <div>
