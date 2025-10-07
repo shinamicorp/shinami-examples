@@ -9,6 +9,7 @@ This is a simple example of combining Shinami Gas Station for feePayer transacti
 6. Run `npm run dev` to run the server.  
 7. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 
+Razor wallet works well with the demo as it supports Movement Testnet out of the box. Here it is in on the [Chrome](https://chromewebstore.google.com/detail/razor-wallet/fdcnegogpncmfejlfnffnofpngdiejii).
 
 For a connected wallet transaction, you will always sign on the frontend and sponsor on the backend. However, you can vary where the transaction is built and where it is submitted. You do so by commenting out the `await connectedWalletTxFEBuildBESubmit(message, currentAccount);` in [`src/client/App.tsx`](https://github.com/shinamicorp/shinami-examples/blob/main/movement/typescript/wallet_adapter_react/src/client/App.tsx#L55) and uncommenting the version you want, e.g.:
 
