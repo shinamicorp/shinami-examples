@@ -55,7 +55,7 @@ function App() {
       if (currentAccount) {
         pendingTxResponse =
           await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
-        //  await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
+        // await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
@@ -245,7 +245,7 @@ function App() {
 
   return (
     <>
-      <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
+      <h1>Shinami Sponsored Transactions on Aptos</h1>
       <h3>Set a short message</h3>
       <form onSubmit={executeTransaction}>
         <div>

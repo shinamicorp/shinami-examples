@@ -1,8 +1,6 @@
 import express from "express";
 import ViteExpress from "vite-express";
-import {
-  GasStationClient
-} from "@shinami/clients/aptos";
+import { GasStationClient } from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
 import {
@@ -28,12 +26,12 @@ if (!(GAS_STATION_TESTNET_BE_KEY)) {
 // Create a Shinami client for sponsoring transactions and a Movement client for submitting transactions to a full node.
 const gasClient = new GasStationClient(GAS_STATION_TESTNET_BE_KEY);
 
+// Initialize the Movement client
 const config = new AptosConfig({
   network: Network.CUSTOM,
   fullnode: 'https://testnet.movementnetwork.xyz/v1',
   faucet: 'https://faucet.testnet.movementnetwork.xyz/',
 });
-// Initialize the Aptos client
 const movementClient = new Aptos(config);
 
 
@@ -156,7 +154,7 @@ app.post('/submitSponsoredTx', async (req, res, next) => {
 // 
 
 // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
-// https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
+// https://explorer.movementnetwork.xyz/account/0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486/modules/packages/hello_blockchain?network=bardock+testnet
 async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: string, expirationSeconds?: number): Promise<SimpleTransaction> {
   let transaction = await movementClient.transaction.build.simple({
     sender: sender,
