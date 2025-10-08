@@ -49,7 +49,7 @@ const movementClient = new Aptos(config);
 
 
 // Step 3:
-//   a. Comment out the four lines from run 1.
+//   a. Comment out the six lines from run 1.
 //   b. Uncomment the eight code lines below.
 //   c. Set the values of `PKEY_ONE` and `PKEY_TWO` to the private key values printed to the console in Step 1.
 //   d. Save the file, transpile with tsc, and run with node build/gas_station.js

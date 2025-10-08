@@ -9,7 +9,7 @@ authors = []
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "movement"
+rev = "movement-mainnet"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
