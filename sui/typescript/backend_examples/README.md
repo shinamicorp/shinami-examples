@@ -10,5 +10,5 @@ Examples to show you how to use Shinami's Gas Station and Wallet Services APIs. 
 - `src/invisible_wallet.ts`: shows you how to create a wallet and submit a transaction where it's the sender.
 
 ## Node Service read after write consistency example
-- [Guide](https://docs.shinami.com/developer-guides/sui/move-guides/common-questions#how-do-i-get-read-after-write-consistency)
+- [Guide](https://docs.shinami.com/developer-guides/sui/move-guides/common-questions#how-do-i-get-read-after-write-consistency%3F)
 - `src/read_after_write_consistency.ts`: shows you how to poll a Full-node to wait for it to have the results of a transaction
