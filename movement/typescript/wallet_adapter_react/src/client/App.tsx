@@ -19,13 +19,14 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
 
+const MODULE_ADDRESS = "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486";
+
 // Set up an Movement client for building, submitting, and fetching transactions
 const config = new AptosConfig({
   network: Network.CUSTOM,
   fullnode: 'https://testnet.movementnetwork.xyz/v1',
   faucet: 'https://faucet.testnet.movementnetwork.xyz/',
 });
-// Initialize the Movement client
 const movementClient = new Aptos(config);
 
 function App() {
@@ -85,7 +86,7 @@ function App() {
 
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
-        if (executedTransaction.events[element].type == "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::MessageChangeEvent") {
+        if (executedTransaction.events[element].type == `${MODULE_ADDRESS}::message::MessageChangeEvent`) {
           setLatestResult(executedTransaction.events[element].data.to_message);
         }
       }
@@ -221,7 +222,7 @@ function App() {
       sender: sender,
       withFeePayer: hasFeePayer,
       data: {
-        function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
+        function: `${MODULE_ADDRESS}::message::set_message`,
         functionArguments: [new MoveString(message)]
       },
       options: {

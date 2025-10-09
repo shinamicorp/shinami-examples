@@ -1,6 +1,6 @@
 # Shinami backend transaction sponsorship + frontend signing example (using @aptos-labs/wallet-adapter-react)
 ## Overview
-This is a simple example of combining Shinami Gas Station for feePayer transaction gas fee sponsorship on the backend with frontend signing via [`@aptos-labs/wallet-adapter-react`](https://www.npmjs.com/package/@aptos-labs/wallet-adapter-react). We provide this example because our Gas Station does not support CORS (browser) requests for security reasons, so you need to pair backend Gas Station requests with your browser-based frontend. **This code is not meant as a template for a production app*** but instead as a quick way to show you how you can pass the relevant types between the frontend and backend. It pairs with our [Frontend signing and backend sponsorship tutorial](https://docs.shinami.com/developer-guides/movement/tutorials/gas-station-with-frontend-signingg). 
+This is a simple example of combining Shinami Gas Station for feePayer transaction gas fee sponsorship on the backend with frontend signing via [`@aptos-labs/wallet-adapter-react`](https://www.npmjs.com/package/@aptos-labs/wallet-adapter-react). It pairs with our [Frontend signing and backend sponsorship tutorial](https://docs.shinami.com/developer-guides/movement/tutorials/gas-station-with-frontend-signing). We provide this example because our Gas Station does not support CORS (browser) requests for security reasons, so you need to pair backend Gas Station requests with your browser-based frontend. **This code is not meant as a template for a production app*** but instead as a quick way to show you how you can pass the relevant types between the frontend and backend. For more extensive coverage of how to integrate `@aptos-labs/wallet-adapter-react` into your Movement app, see [this doc on Movement Labs' dev docs site](https://docs.movementnetwork.xyz/devs/interactonchain/wallet-adapter/connect_wallet).
 
 ## Steps to set up and run the app
 1. Run `npm install` to install the dependencies
@@ -9,7 +9,7 @@ This is a simple example of combining Shinami Gas Station for feePayer transacti
 6. Run `npm run dev` to run the server.  
 7. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 
-Razor wallet works well with the demo as it supports Movement Testnet out of the box. Here it is in on the [Chrome](https://chromewebstore.google.com/detail/razor-wallet/fdcnegogpncmfejlfnffnofpngdiejii).
+Razor wallet works well with the demo as it supports Movement Testnet out of the box. Here is the [Chrome extension](https://chromewebstore.google.com/detail/razor-wallet/fdcnegogpncmfejlfnffnofpngdiejii).
 
 For a connected wallet transaction, you will always sign on the frontend and sponsor on the backend. However, you can vary where the transaction is built and where it is submitted. You do so by commenting out the `await connectedWalletTxFEBuildBESubmit(message, currentAccount);` in [`src/client/App.tsx`](https://github.com/shinamicorp/shinami-examples/blob/main/movement/typescript/wallet_adapter_react/src/client/App.tsx#L55) and uncommenting the version you want, e.g.:
 
