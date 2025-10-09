@@ -3,26 +3,31 @@ import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useState } from "react";
 import axios from 'axios';
 import {
-  PendingTransactionResponse,
-  UserTransactionResponse,
-  SimpleTransaction,
-  Deserializer,
+  AccountAddress,
   AccountAuthenticator,
+  Aptos,
+  AptosConfig,
+  Deserializer,
   Hex,
   MoveString,
-  AccountAddress
+  Network,
+  PendingTransactionResponse,
+  SimpleTransaction,
+  UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
-import { createAptosClient } from "@shinami/clients/aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
-const SHINAMI_APTOS_REST_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY;
-if (!(SHINAMI_APTOS_REST_API_KEY)) {
-  throw Error('VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY .env.local variable not set');
-}
 
-// Set up an Aptos client for building, submitting, and fetching transactions
-const aptosClient = createAptosClient(SHINAMI_APTOS_REST_API_KEY);
+const MODULE_ADDRESS = "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486";
+
+// Set up an Movement client for building, submitting, and fetching transactions
+const config = new AptosConfig({
+  network: Network.CUSTOM,
+  fullnode: 'https://testnet.movementnetwork.xyz/v1',
+  faucet: 'https://faucet.testnet.movementnetwork.xyz/',
+});
+const movementClient = new Aptos(config);
 
 function App() {
   const {
@@ -37,9 +42,6 @@ function App() {
 
   // 1. Get the user's input and update the page state.
   // 2. Build, sponsor, and execute a feePayer SimpleTransaction with the given user input. 
-  //    If there is a connected wallet, represented by `currentAccount` having a value,
-  //    then the connected wallet is the sender. Otherwise, the sender is a backend
-  //    Shinami Invisible Wallet (hard coded for this very simple example app). 
   const executeTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setnewSuccessfulResult(false);
@@ -59,7 +61,7 @@ function App() {
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
-        pendingTxResponse = await invisibleWalletTx(message);
+        console.log("No connected wallet detected.");
       }
 
       if (pendingTxResponse?.hash) {
@@ -73,18 +75,18 @@ function App() {
   }
 
 
-  // Poll the Full node represented by the Aptos client until the given digest
+  // Poll the Full node represented by the Movement client until the given digest
   // has been propagated to the node, and the node returns results for the digest.
   // Upon the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (txHash: string) => {
     console.log("transaction: ", txHash);
-    const executedTransaction = await aptosClient.waitForTransaction({
+    const executedTransaction = await movementClient.waitForTransaction({
       transactionHash: txHash
     }) as UserTransactionResponse;
 
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
-        if (executedTransaction.events[element].type == "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange") {
+        if (executedTransaction.events[element].type == `${MODULE_ADDRESS}::message::MessageChangeEvent`) {
           setLatestResult(executedTransaction.events[element].data.to_message);
         }
       }
@@ -114,7 +116,7 @@ function App() {
 
     // Step 3: Submit the transaction along with both signatures and return the response to the caller
     const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-    return await aptosClient.transaction.submit.simple({
+    return await movementClient.transaction.submit.simple({
       transaction: simpleTx,
       senderAuthenticator: senderSig.authenticator,
       feePayerAuthenticator: sponsorSig,
@@ -179,7 +181,7 @@ function App() {
     // Step 5: Submit the transaction along with both signatures (after deserializing the feePayer signature returned from the BE)
     //         and return the response to the caller.
     const sponsorSig = AccountAuthenticator.deserialize(new Deserializer(Hex.fromHexString(sponsorshipResp.data.sponsorAuthenticator).toUint8Array()));
-    return await aptosClient.transaction.submit.simple({
+    return await movementClient.transaction.submit.simple({
       transaction: simpleTx,
       senderAuthenticator: senderSig.authenticator,
       feePayerAuthenticator: sponsorSig
@@ -214,13 +216,13 @@ function App() {
 
 
   // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
-  // https://explorer.aptoslabs.com/account/0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817/modules/code/message?network=testnet
+  // https://explorer.movementnetwork.xyz/account/0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486/modules/packages/hello_blockchain?network=bardock+testnet
   const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, hasFeePayer: boolean, expirationSeconds?: number): Promise<SimpleTransaction> => {
-    return await aptosClient.transaction.build.simple({
+    return await movementClient.transaction.build.simple({
       sender: sender,
       withFeePayer: hasFeePayer,
       data: {
-        function: "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::set_message",
+        function: `${MODULE_ADDRESS}::message::set_message`,
         functionArguments: [new MoveString(message)]
       },
       options: {
@@ -231,21 +233,9 @@ function App() {
 
 
 
-  // 1. Ask the backend to build, sign, sponsor, and execute a SimpleTransaction with the given user input. 
-  //    The sender is the user's Invisible Wallet, which in this example app is just a hard-coded wallet for simplicity.
-  //     Return the PendingTransactionResponse to the caller.
-  const invisibleWalletTx = async (message: string): Promise<PendingTransactionResponse> => {
-    console.log("invisibleWalletTx");
-    const resp = await axios.post('/invisibleWalletTx', {
-      message
-    });
-    return resp.data.pendingTx;
-  }
-
-
   return (
     <>
-      <h1>Shinami Sponsored Transactions on Aptos</h1>
+      <h1>Shinami Sponsored Transactions on Movement</h1>
       <h3>Set a short message</h3>
       <form onSubmit={executeTransaction}>
         <div>
@@ -259,13 +249,11 @@ function App() {
         <p>
           <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
           <br />
-          <a href={`https://explorer.aptoslabs.com/txn/${latestDigest}?network=testnet`} target="_blank">[View on Aptos Exlorer]</a>
+          <a href={`https://explorer.movementnetwork.xyz/txn/${latestDigest}?network=bardock+testnet`} target="_blank">[View on Movement Exlorer]</a>
         </p>
         :
         <label>Latest Successful Digest: N/A</label>
       }
-      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
-      <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
     </>
   );
