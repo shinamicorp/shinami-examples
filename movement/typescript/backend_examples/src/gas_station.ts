@@ -263,7 +263,7 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
         withFeePayer: true,
         data: {
             function: "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486::message::set_message",
-            functionArguments: ["bye"]
+            functionArguments: ["test_message"]
         },
         options: {
             expireTimestamp: expirationSeconds

@@ -87,7 +87,7 @@ function App() {
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == `${MODULE_ADDRESS}::message::MessageChangeEvent`) {
-          setLatestResult(executedTransaction.events[element].data.to_message);
+          setLatestResult(`previous message: "${executedTransaction.events[element].data.from_message}" -> new message: "${executedTransaction.events[element].data.to_message}"`);
         }
       }
       setLatestDigest(txHash);
@@ -247,7 +247,7 @@ function App() {
       <h3>Transaction result:</h3>
       {newSuccessfulResult ?
         <p>
-          <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+          <label>Latest Succesful Digest: {latestDigest} <br /> {latestResult} </label>
           <br />
           <a href={`https://explorer.movementnetwork.xyz/txn/${latestDigest}?network=bardock+testnet`} target="_blank">[View on Movement Exlorer]</a>
         </p>

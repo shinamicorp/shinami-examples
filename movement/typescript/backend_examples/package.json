@@ -4,7 +4,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^5.1.0",
+    "@aptos-labs/ts-sdk": "^5.1.4",
     "@shinami/clients": "^0.9.7"
   },
   "type": "module"
