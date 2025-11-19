@@ -105,7 +105,7 @@ dist
 # Mac os Finder metadata file
 .DS_Store
 
-# Node build output
+# Node and Move build output
 sui/typescript/backend_examples/build/
 aptos/typescript/backend_examples/build/
 movement/typescript/backend_examples/build/
@@ -118,4 +118,8 @@ movement/move/build/
 movement/typescript/backend_examples/move/build
 
 # Movement Move config files
-movement/move/.movement
+.movement
+
+# Next.js build output
+.next/
+out/
