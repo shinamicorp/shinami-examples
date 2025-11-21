@@ -56,8 +56,8 @@ export default function Home() {
     try {
       if (currentAccount) {
         pendingTxResponse =
-          // await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
-          await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
+          await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
+        // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
         console.log("No connected wallet detected.");
       }
@@ -84,7 +84,7 @@ export default function Home() {
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == `${MODULE_ADDRESS}::message::MessageChangeEvent`) {
-          setLatestResult(executedTransaction.events[element].data.to_message);
+          setLatestResult(`Message changed from: "${executedTransaction.events[element].data.from_message}" to: "${executedTransaction.events[element].data.to_message}"`);
         }
       }
       setLatestDigest(txHash);

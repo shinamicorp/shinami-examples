@@ -10,6 +10,7 @@ import { GasStationClient } from "@shinami/clients/aptos";
 
 const SHINAMI_MOVEMENT_GAS_STATION_ENDPOINT = 'https://api.us1.shinami.com/movement/gas/v1/';
 
+
 // Endpoint to:
 //  1. Sponsor and submit a SimpleTransaction sent from the FE (given also the sender's signature)
 //  2. Return the PendingTransactionResponse to FE
@@ -17,8 +18,7 @@ export async function POST(req: Request) {
     if (!process.env.SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY) {
         throw Error('SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY .env.local variable not set');
     }
-    console.log("Before SDK:", globalThis.fetch);
-    console.log(Object.getOwnPropertyNames(globalThis.fetch));
+
     const gasStationClient = new GasStationClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY!);
 
     try {
@@ -31,8 +31,6 @@ export async function POST(req: Request) {
         return NextResponse.json(resp);
 
     } catch (err) {
-        console.log("After SDK error:", globalThis.fetch);
-        console.log(Object.getOwnPropertyNames(globalThis.fetch));
         console.error(err);
         return NextResponse.json({ error: "Failed to sponsor and submit transaction" }, { status: 500 });
     }
