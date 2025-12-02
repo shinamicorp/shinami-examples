@@ -56,8 +56,8 @@ export default function Home() {
     try {
       if (currentAccount) {
         pendingTxResponse =
-          await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
-        // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
+          // await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
+          await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
         console.log("No connected wallet detected.");
       }
@@ -97,6 +97,16 @@ export default function Home() {
   // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
   // https://explorer.movementnetwork.xyz/account/0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486/modules/packages/hello_blockchain?network=bardock+testnet
   const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, hasFeePayer: boolean, expirationSeconds?: number): Promise<SimpleTransaction> => {
+    const simpleTx = await movementClient.transaction.build.simple({
+      sender: sender,
+      withFeePayer: true,
+      data: {
+        function: `${MODULE_ADDRESS}::message::set_message`,
+        functionArguments: [new MoveString(message)]
+      }
+    });
+    console.log(simpleTx.feePayerAddress?.toString());
+
     return await movementClient.transaction.build.simple({
       sender: sender,
       withFeePayer: hasFeePayer,
@@ -149,6 +159,7 @@ export default function Home() {
     // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
     const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
     const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
+    console.log(simpleTx.feePayerAddress?.toString());
 
     // Step 2: Obtain the sender signature over the transaction (can come before or after sponsorship, but if you wait until after
     //  and the user fails to sign, you'll still end up paying the small sponsorship fee for an unused sponsorship).
@@ -163,12 +174,11 @@ export default function Home() {
       }),
     });
     const result = await sponsorshipResp.json();
-    console.log(result);
-
 
     // Step 4: Update the transaction's feePayerAddress returned from the BE (after deserializing it)
     const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(result.feePayerAddress).toUint8Array()));
-    simpleTx.feePayerAddress = feePayerAddress;
+    // simpleTx.feePayerAddress = feePayerAddress;
+    // console.log(simpleTx.feePayerAddress.toString());
 
     // Step 5: Submit the transaction along with both signatures (after deserializing the feePayer signature returned from the BE)
     //         and return the response to the caller.
