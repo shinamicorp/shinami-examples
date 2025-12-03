@@ -11,10 +11,10 @@ import { GasStationClient } from "@shinami/clients/aptos";
 //  1. Sponsor a feePayer SimpleTransaction built on the FE
 //  2. Return the feePayer's signature and address to FE
 export async function POST(req: Request) {
-    if (!process.env.SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY) {
-        throw Error('SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY .env.local variable not set');
+    if (!process.env.SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY) {
+        throw Error('SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY .env.local variable not set');
     }
-    const gasStationClient = new GasStationClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_STATION_API_KEY!);
+    const gasStationClient = new GasStationClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY!);
 
     try {
 

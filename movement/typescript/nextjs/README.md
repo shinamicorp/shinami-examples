@@ -7,7 +7,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 In the root directory
 1.  In your terminal, run `npm install` for dependencies
 2.  In your terminal, run `cp .env .env.local` to create a local version outside version control
-3. Add your Shinami Movement Gas Station API key to .env.local
+3. Add your Shinami Movement Gas Station API key to .env.local as the value for `SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY`
 4. Run the development server:
 
 ```bash
@@ -24,4 +24,6 @@ bun dev
 
 
 ## Movement testing wallet recommendation
-[Razor Wallet](https://chromewebstore.google.com/detail/razor-wallet/fdcnegogpncmfejlfnffnofpngdiejii) works well with Movement Testnet, which this app reads and writes to.
+Nightly wallet works well with the demo as it supports Movement Testnet out of the box. Here is the [Chrome extension](https://chromewebstore.google.com/detail/nightly/fiikommddbeccaoicoejoniammnalkfa). You will need to switch your network to Movement Bardock Testnet in the Nightly UI before using your wallet with this app. This is not a recommendation to use or not use Nightly for your wallet in general, but a recommendation to use it for this sample app. If you want to try other wallets you can go to `./app/components/wallet-provider.tsx` and either remove this line completely or add some wallets from the comment into the `optInWallets` array, e.g. `optInWallets={["Nightly", "Pontem Wallet"]}`.
+
+`optInWallets={["Nightly"]} // , "Pontem Wallet", "Backpack", "MSafe", "Bitget Wallet", "Gate Wallet", "Cosmostation Wallet", "OKX Wallet", "Petra"`

@@ -1,6 +1,5 @@
 'use client';
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
-import '@ant-design/v5-patch-for-react-19';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useState } from 'react';
 import {
@@ -59,7 +58,7 @@ export default function Home() {
           // await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
           await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
-        console.log("No connected wallet detected.");
+        pendingTxResponse = await invisibleWalletTx(message);
       }
 
       if (pendingTxResponse?.hash) {
@@ -159,7 +158,7 @@ export default function Home() {
     // Step 1: build the transaction. Set a five min expiration to be safe since we'll wait on a user signature (SDK default = 20 seconds)
     const FIVE_MINUTES_FROM_NOW_IN_SECONDS = Math.floor(Date.now() / 1000) + (5 * 60);
     const simpleTx = await buildSimpleMoveCallTransaction(AccountAddress.from(senderAddress), message, true, FIVE_MINUTES_FROM_NOW_IN_SECONDS);
-    console.log(simpleTx.feePayerAddress?.toString());
+    console.log("placeholder feePayer address:", simpleTx.feePayerAddress?.toString());
 
     // Step 2: Obtain the sender signature over the transaction (can come before or after sponsorship, but if you wait until after
     //  and the user fails to sign, you'll still end up paying the small sponsorship fee for an unused sponsorship).
@@ -177,8 +176,8 @@ export default function Home() {
 
     // Step 4: Update the transaction's feePayerAddress returned from the BE (after deserializing it)
     const feePayerAddress = AccountAddress.deserialize(new Deserializer(Hex.fromHexString(result.feePayerAddress).toUint8Array()));
-    // simpleTx.feePayerAddress = feePayerAddress;
-    // console.log(simpleTx.feePayerAddress.toString());
+    simpleTx.feePayerAddress = feePayerAddress;
+    console.log("actual feePayer address (which was just set on the transaction before submitting it):", simpleTx.feePayerAddress.toString());
 
     // Step 5: Submit the transaction along with both signatures (after deserializing the feePayer signature returned from the BE)
     //         and return the response to the caller.
@@ -192,6 +191,23 @@ export default function Home() {
     return pendingTx;
   }
 
+
+  // 1. Ask the backend to build, sign, sponsor, and execute a SimpleTransaction with the given user input. 
+  //    The sender is the user's Invisible Wallet, which in this example app is just a hard-coded wallet for simplicity.
+  //     Return the PendingTransactionResponse to the caller.
+  const invisibleWalletTx = async (message: string): Promise<PendingTransactionResponse> => {
+    console.log("invisibleWalletTx");
+    const sponsoredInvisibleWalletTxResp = await fetch("/api/invisible-wallet-tx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: message
+      }),
+    });
+    const result = await sponsoredInvisibleWalletTxResp.json();
+    console.log("result");
+    return result;
+  }
 
 
   return (
