@@ -264,7 +264,7 @@ function App() {
         :
         <label>Latest Successful Digest: N/A</label>
       }
-      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
+      <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
     </>

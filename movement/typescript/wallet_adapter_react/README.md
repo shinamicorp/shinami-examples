@@ -9,7 +9,10 @@ This is a simple example of combining Shinami Gas Station for feePayer transacti
 6. Run `npm run dev` to run the server.  
 7. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 
-Razor wallet works well with the demo as it supports Movement Testnet out of the box. Here is the [Chrome extension](https://chromewebstore.google.com/detail/razor-wallet/fdcnegogpncmfejlfnffnofpngdiejii).
+Nightly wallet works well with the demo as it supports Movement Testnet out of the box. Here is the [Chrome extension](https://chromewebstore.google.com/detail/nightly/fiikommddbeccaoicoejoniammnalkfa). You will need to switch your network to Movement Bardock Testnet in the Nightly UI before using your wallet with this app. This is not a recommendation to use or not use Nightly for your wallet in general, but a recommendation to use it for this sample app. If you want to try other wallets you can go to `./src/client/main.tsx` and either remove this line completely or add some wallets from the comment into the `optInWallets` array, e.g. `optInWallets={["Nightly", "Pontem Wallet"]}`.
+
+`optInWallets={["Nightly"]} // , "Pontem Wallet", "Backpack", "MSafe", "Bitget Wallet", "Gate Wallet", "Cosmostation Wallet", "OKX Wallet", "Petra"`
+
 
 For a connected wallet transaction, you will always sign on the frontend and sponsor on the backend. However, you can vary where the transaction is built and where it is submitted. You do so by commenting out the `await connectedWalletTxFEBuildBESubmit(message, currentAccount);` in [`src/client/App.tsx`](https://github.com/shinamicorp/shinami-examples/blob/main/movement/typescript/wallet_adapter_react/src/client/App.tsx#L55) and uncommenting the version you want, e.g.:
 

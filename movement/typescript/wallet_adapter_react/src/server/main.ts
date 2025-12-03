@@ -1,6 +1,11 @@
 import express from "express";
 import ViteExpress from "vite-express";
-import { GasStationClient } from "@shinami/clients/aptos";
+import {
+  GasStationClient,
+  WalletClient,
+  ShinamiWalletSigner,
+  KeyClient
+} from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
 import {
@@ -18,13 +23,22 @@ import {
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
 export const GAS_STATION_TESTNET_BE_KEY = process.env.GAS_STATION_TESTNET_BE_KEY;
+export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
+export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
 if (!(GAS_STATION_TESTNET_BE_KEY)) {
   throw Error('GAS_STATION_TESTNET_BE_KEY .env.local variable not set');
 }
 
-// Create a Shinami client for sponsoring transactions and a Movement client for submitting transactions to a full node.
+if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
+  throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
+}
+
+// Create a Shinami client for sponsoring transactions and handling Invisible Wallet operations, 
+//  as well as a Movement client for submitting transactions to a full node.
 const gasClient = new GasStationClient(GAS_STATION_TESTNET_BE_KEY);
+const keyClient = new KeyClient(GAS_STATION_TESTNET_BE_KEY);
+const walletClient = new WalletClient(GAS_STATION_TESTNET_BE_KEY);
 
 // Initialize the Movement client
 const config = new AptosConfig({
@@ -34,6 +48,16 @@ const config = new AptosConfig({
 });
 const movementClient = new Aptos(config);
 
+// Create our Invisible Wallet 
+const signer = new ShinamiWalletSigner(
+  USER123_WALLET_ID,
+  walletClient,
+  USER123_WALLET_SECRET,
+  keyClient
+);
+const CREATE_WALLET_IF_NOT_FOUND = true;
+const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
 
 // initilaize our server
 const app = express();
@@ -51,6 +75,29 @@ ViteExpress.listen(app, 3000, () =>
 //       to secure them if you use them in an actual production app with real users.
 //
 
+
+
+// Endpoint to:
+//  1. Build and a feePayer SimpleTransaction with the given user intput.
+//  2. Sign, sponsor, and submit it for an Invisible Wallet sender.
+//  3. Return the PendingTransactionResponse to the FE
+app.post('/invisibleWalletTx', async (req, res, next) => {
+  try {
+    // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
+    //     Use the SDK's default transaction expiration of 20 seconds since we'll immediately sign and submit.
+    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
+
+    // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
+    const pendingTransaction = await signer.executeGaslessTransaction(simpleTx);
+
+    // Step 3: return the PendingTransactionResponse to the FE
+    res.json({
+      pendingTx: pendingTransaction
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 
 

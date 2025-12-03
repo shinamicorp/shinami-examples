@@ -61,7 +61,7 @@ function App() {
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
-        console.log("No connected wallet detected.");
+        pendingTxResponse = await invisibleWalletTx(message);
       }
 
       if (pendingTxResponse?.hash) {
@@ -231,6 +231,17 @@ function App() {
     });
   }
 
+  // 1. Ask the backend to build, sign, sponsor, and execute a SimpleTransaction with the given user input. 
+  //    The sender is the user's Invisible Wallet, which in this example app is just a hard-coded wallet for simplicity.
+  //     Return the PendingTransactionResponse to the caller.
+  const invisibleWalletTx = async (message: string): Promise<PendingTransactionResponse> => {
+    console.log("invisibleWalletTx");
+    const resp = await axios.post('/invisibleWalletTx', {
+      message
+    });
+    return resp.data.pendingTx;
+  }
+
 
 
   return (
@@ -254,6 +265,8 @@ function App() {
         :
         <label>Latest Successful Digest: N/A</label>
       }
+      <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
+      <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
     </>
   );
