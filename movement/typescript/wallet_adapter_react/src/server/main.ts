@@ -31,7 +31,7 @@ if (!(GAS_STATION_TESTNET_BE_KEY)) {
 }
 
 if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
-  throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
+  throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local variables not set');
 }
 
 // Create a Shinami client for sponsoring transactions and handling Invisible Wallet operations, 
@@ -56,8 +56,8 @@ const signer = new ShinamiWalletSigner(
   keyClient
 );
 const CREATE_WALLET_IF_NOT_FOUND = true;
-const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
-console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
+const WALLET_ONE_MOVEMENT_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+console.log("Invisible wallet address:", WALLET_ONE_MOVEMENT_ADDRESS.toString());
 
 // initilaize our server
 const app = express();
@@ -85,7 +85,7 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
     //     Use the SDK's default transaction expiration of 20 seconds since we'll immediately sign and submit.
-    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
+    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_MOVEMENT_ADDRESS, req.body.message);
 
     // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
     const pendingTransaction = await signer.executeGaslessTransaction(simpleTx);
