@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
-    GasStationClient,
     WalletClient,
     ShinamiWalletSigner,
     KeyClient
 } from "@shinami/clients/aptos";
+import { buildSimpleMoveCallTransaction } from "@/app/lib/utils";
 
 // Endpoint to:
 //  1. Sponsor a feePayer SimpleTransaction built on the FE
@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     }
 
     // Create Shinami clients for sponsoring transactions and handling Invisible Wallet operations
-    const gasClient = new GasStationClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY);
     const keyClient = new KeyClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY);
     const walletClient = new WalletClient(process.env.SHINAMI_PRIVATE_BACKEND_GAS_AND_WALLET_API_KEY);
 
@@ -34,8 +33,8 @@ export async function POST(req: Request) {
         keyClient
     );
     const CREATE_WALLET_IF_NOT_FOUND = true;
-    const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
-    console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
+    const WALLET_ONE_MOVEMENT_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+    console.log("Invisible wallet address:", WALLET_ONE_MOVEMENT_ADDRESS.toString());
 
     try {
 
@@ -44,7 +43,8 @@ export async function POST(req: Request) {
 
         // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
         //     Use the SDK's default transaction expiration of 20 seconds since we'll immediately sign and submit.
-        const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
+        const HAS_FEEPAYER = true;
+        const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_MOVEMENT_ADDRESS, message, HAS_FEEPAYER);
 
         // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
         const pendingTransaction = await signer.executeGaslessTransaction(simpleTx);
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         // Step 2: Send the serialized sponsor AccountAuthenticator and feePayer AccountAddress back to the FE.
         //  Our SDK automatically updates the transaction with the feePayer address post-sponsorship, so we can 
         //  get the address from there and set it on the FE before submitting the tx.
-        return NextResponse.json(resp);
+        return NextResponse.json(pendingTransaction);
 
     } catch (err) {
         console.error(err);

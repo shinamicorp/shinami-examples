@@ -9,13 +9,12 @@ import {
   AptosConfig,
   Deserializer,
   Hex,
-  MoveString,
   Network,
   PendingTransactionResponse,
-  SimpleTransaction,
   UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { buildSimpleMoveCallTransaction, MODULE_ADDRESS } from "./lib/utils";
 
 
 export default function Home() {
@@ -28,8 +27,6 @@ export default function Home() {
   const [latestDigest, setLatestDigest] = useState<string>();
   const [latestResult, setLatestResult] = useState<string>();
   const [newSuccessfulResult, setnewSuccessfulResult] = useState<boolean>();
-
-  const MODULE_ADDRESS = "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486";
 
   // Set up an Movement client for building, submitting, and fetching transactions
   const config = new AptosConfig({
@@ -91,32 +88,6 @@ export default function Home() {
     } else {
       console.log("Transaction did not execute successfully.");
     }
-  }
-
-  // Build a SimpleTransaction representing a Move call to a module we deployed to Testnet
-  // https://explorer.movementnetwork.xyz/account/0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486/modules/packages/hello_blockchain?network=bardock+testnet
-  const buildSimpleMoveCallTransaction = async (sender: AccountAddress, message: string, hasFeePayer: boolean, expirationSeconds?: number): Promise<SimpleTransaction> => {
-    const simpleTx = await movementClient.transaction.build.simple({
-      sender: sender,
-      withFeePayer: true,
-      data: {
-        function: `${MODULE_ADDRESS}::message::set_message`,
-        functionArguments: [new MoveString(message)]
-      }
-    });
-    console.log(simpleTx.feePayerAddress?.toString());
-
-    return await movementClient.transaction.build.simple({
-      sender: sender,
-      withFeePayer: hasFeePayer,
-      data: {
-        function: `${MODULE_ADDRESS}::message::set_message`,
-        functionArguments: [new MoveString(message)]
-      },
-      options: {
-        expireTimestamp: expirationSeconds
-      }
-    });
   }
 
   // 1. Build a feePayer SimpleTransaction
@@ -227,7 +198,7 @@ export default function Home() {
           <p>
             <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
             <br />
-            <a href={`https://explorer.movementnetwork.xyz/txn/${latestDigest}?network=bardock+testnet`} target="_blank">[View on Movement Exlorer]</a>
+            <a href={`https://explorer.movementnetwork.xyz/txn/${latestDigest}?network=bardock+testnet`} target="_blank">[View on Movement Explorer]</a>
           </p>
           :
           <label>Latest Successful Digest: N/A</label>
