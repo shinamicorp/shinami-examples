@@ -12,7 +12,7 @@
     "@aptos-labs/ts-sdk": "^5.1.5",
     "@aptos-labs/wallet-adapter-ant-design": "^5.3.2",
     "@aptos-labs/wallet-adapter-react": "^7.2.2",
-    "@shinami/clients": "file:~/Desktop/shinami-clients-0.9.8.tgz",
+    "@shinami/clients": "^0.9.8",
     "antd": "^6.0.1",
     "axios": "^1.13.2",
     "dotenv-flow": "^4.1.0",

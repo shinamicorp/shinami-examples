@@ -22,12 +22,12 @@ import {
 
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
-export const GAS_STATION_TESTNET_BE_KEY = process.env.GAS_STATION_TESTNET_BE_KEY;
+export const GAS_STATION_AND_WALLET_TESTNET_BE_KEY = process.env.GAS_STATION_AND_WALLET_TESTNET_BE_KEY;
 export const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
 export const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
-if (!(GAS_STATION_TESTNET_BE_KEY)) {
-  throw Error('GAS_STATION_TESTNET_BE_KEY .env.local variable not set');
+if (!(GAS_STATION_AND_WALLET_TESTNET_BE_KEY)) {
+  throw Error('GAS_STATION_AND_WALLET_TESTNET_BE_KEY .env.local variable not set');
 }
 
 if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
@@ -36,9 +36,9 @@ if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
 
 // Create a Shinami client for sponsoring transactions and handling Invisible Wallet operations, 
 //  as well as a Movement client for submitting transactions to a full node.
-const gasClient = new GasStationClient(GAS_STATION_TESTNET_BE_KEY);
-const keyClient = new KeyClient(GAS_STATION_TESTNET_BE_KEY);
-const walletClient = new WalletClient(GAS_STATION_TESTNET_BE_KEY);
+const gasClient = new GasStationClient(GAS_STATION_AND_WALLET_TESTNET_BE_KEY);
+const keyClient = new KeyClient(GAS_STATION_AND_WALLET_TESTNET_BE_KEY);
+const walletClient = new WalletClient(GAS_STATION_AND_WALLET_TESTNET_BE_KEY);
 
 // Initialize the Movement client
 const config = new AptosConfig({
