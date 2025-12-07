@@ -7,7 +7,7 @@ Examples to show you how to use Shinami's Gas Station and Wallet Services APIs. 
 
 ## Invisible Wallets (embedded NFT wallets for Web2-native users)
 - [Tutorial](https://docs.shinami.com/developer-guides/sui/tutorials/invisible-wallets)
-- `src/invisible_wallet.ts`: shows you how to create a wallet and submit a transaction where it's the sender.
+- `src/invisible_wallet.ts`: shows you how to create a wallet and submit a transaction where it's the sender, using Shinami Gas Station for transaction sponsorship.
 
 ## Node Service read after write consistency example
 - [Guide](https://docs.shinami.com/developer-guides/sui/move-guides/common-questions#how-do-i-get-read-after-write-consistency%3F)

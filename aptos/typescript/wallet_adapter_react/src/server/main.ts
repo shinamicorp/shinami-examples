@@ -46,8 +46,8 @@ const signer = new ShinamiWalletSigner(
   keyClient
 );
 const CREATE_WALLET_IF_NOT_FOUND = true;
-const WALLET_ONE_SUI_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
-console.log("Invisible wallet address:", WALLET_ONE_SUI_ADDRESS.toString());
+const WALLET_ONE_APTOS_ADDRESS = await signer.getAddress(CREATE_WALLET_IF_NOT_FOUND);
+console.log("Invisible wallet address:", WALLET_ONE_APTOS_ADDRESS.toString());
 
 // initilaize our server
 const app = express();
@@ -73,7 +73,7 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     // Step 1: Build a feePayer SimpleTransaction with the values sent from the FE
     //     Use the SDK's default transaction expiration of 20 seconds since we'll immediately sign and submit.
-    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_SUI_ADDRESS, req.body.message);
+    const simpleTx = await buildSimpleMoveCallTransaction(WALLET_ONE_APTOS_ADDRESS, req.body.message);
 
     // Step 2: Sign, sponsor, and submit the transaction for our Invisible Wallet sender
     const pendingTransaction = await signer.executeGaslessTransaction(simpleTx);

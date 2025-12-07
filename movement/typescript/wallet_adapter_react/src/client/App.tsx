@@ -61,7 +61,7 @@ function App() {
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
-        console.log("No connected wallet detected.");
+        pendingTxResponse = await invisibleWalletTx(message);
       }
 
       if (pendingTxResponse?.hash) {
@@ -87,7 +87,7 @@ function App() {
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == `${MODULE_ADDRESS}::message::MessageChangeEvent`) {
-          setLatestResult(executedTransaction.events[element].data.to_message);
+          setLatestResult(`previous message: "${executedTransaction.events[element].data.from_message}" -> new message: "${executedTransaction.events[element].data.to_message}"`);
         }
       }
       setLatestDigest(txHash);
@@ -231,6 +231,17 @@ function App() {
     });
   }
 
+  // 1. Ask the backend to build, sign, sponsor, and execute a SimpleTransaction with the given user input. 
+  //    The sender is the user's Invisible Wallet, which in this example app is just a hard-coded wallet for simplicity.
+  //     Return the PendingTransactionResponse to the caller.
+  const invisibleWalletTx = async (message: string): Promise<PendingTransactionResponse> => {
+    console.log("invisibleWalletTx");
+    const resp = await axios.post('/invisibleWalletTx', {
+      message
+    });
+    return resp.data.pendingTx;
+  }
+
 
 
   return (
@@ -247,13 +258,15 @@ function App() {
       <h3>Transaction result:</h3>
       {newSuccessfulResult ?
         <p>
-          <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+          <label>Latest Succesful Digest: {latestDigest} <br /> {latestResult} </label>
           <br />
           <a href={`https://explorer.movementnetwork.xyz/txn/${latestDigest}?network=bardock+testnet`} target="_blank">[View on Movement Exlorer]</a>
         </p>
         :
         <label>Latest Successful Digest: N/A</label>
       }
+      <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
+      <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
     </>
   );
