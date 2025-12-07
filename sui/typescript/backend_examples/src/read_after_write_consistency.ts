@@ -12,7 +12,7 @@ import {
 
 
 // 2. Copy your access key value. Must have Testnet rights to all Shinami services.
-const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}"
+const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
 
 // 3. Set up a wallet id and an associated secret (in a production app you'd store these in a DB for each user)
@@ -129,6 +129,7 @@ console.log("getOwnedObjectsResponse for sender's wallet\n", walletContents.data
 
 // Example 2: you can now build a transaction, which makes requests to the Fullnode to get object and other info.
 //  (Transaction.build() is called within 'buildGaslessTransaction' function call inside 'buildAndSubmitGaslessTx'.)
+console.log("Building and submitting a new tx with the object...");
 tx = new Transaction();
 tx.transferObjects([tx.object(OBJECT_TO_TRANSFER_ID)], tx.pure(bcs.Address.serialize(WALLET_ONE_SUI_ADDRESS)));
 sponsorSignAndExecuteTxResponse = await buildAndSubmitGaslessTx(signer, tx);

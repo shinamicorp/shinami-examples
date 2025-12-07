@@ -85,7 +85,7 @@ function App() {
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange") {
-          setLatestResult(executedTransaction.events[element].data.to_message);
+          setLatestResult(`previous message: "${executedTransaction.events[element].data.from_message}" -> new message: "${executedTransaction.events[element].data.to_message}"`);
         }
       }
       setLatestDigest(txHash);
@@ -257,14 +257,14 @@ function App() {
       <h3>Transaction result:</h3>
       {newSuccessfulResult ?
         <p>
-          <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+          <label>Latest Succesful Digest: {latestDigest} <br /> {latestResult} </label>
           <br />
           <a href={`https://explorer.aptoslabs.com/txn/${latestDigest}?network=testnet`} target="_blank">[View on Aptos Exlorer]</a>
         </p>
         :
         <label>Latest Successful Digest: N/A</label>
       }
-      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
+      <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
       <WalletSelector />
     </>
