@@ -5,7 +5,7 @@ This is a simple example of combining Shinami Gas Station for feePayer transacti
 ## Steps to set up and run the app
 1. Run `npm install` to install the dependencies
 2. Run `cp .env .env.local` to create a local file for your environmental variables (so they won't be committed to github)
-3. In your .env.local file, uncomment and set the value for GAS_STATION_AND_WALLET_TESTNET_BE_KEY: your Shinami API access key with rights to Gas Station on Movement Testnet and Wallet Services (which you create in your Shinami dashboard: https://app.shinami.com/access-keys). The Wallet Service rights 
+3. In your .env.local file, uncomment and set the value for GAS_STATION_AND_WALLET_TESTNET_BE_KEY: your Shinami API access key with rights to Gas Station on Movement Testnet and Wallet Services (which you create in your Shinami dashboard: https://app.shinami.com/access-keys). 
 6. Run `npm run dev` to run the server.  
 7. Visit [localhost](http://localhost:3000/) in your browser to use the app.
 
