@@ -10,6 +10,12 @@ import {
 import { Box, Heading } from "@radix-ui/themes";
 import axios from 'axios';
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
+import {
+  buildGaslessTransaction,
+  GaslessTransaction
+} from "@shinami/clients/sui";
+const EXAMPLE_MOVE_PACKAGE_ID = import.meta.env.VITE_EXAMPLE_MOVE_PACKAGE_ID;
+
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -51,6 +57,7 @@ function App() {
         suiTxResponse = await
           connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
         // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
+        // connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
       }
       else {
         suiTxResponse = await invisibleWalletTx(x, y);
@@ -138,6 +145,32 @@ function App() {
     return resp;
   }
 
+  // 1. Build a Move call transaction with the given user input.
+  // 2. Ask the backend to sponsor it
+  // 3. Sign the sponsored transaction returned from the backend with the user's connected wallet.
+  // 4. Submit the transaction to a Fullnode from the frontend.
+  // 4. Return the SuiTransactionBlockResponse to the caller.
+  const connectedWalletTxFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiTransactionBlockResponse> => {
+    console.log("connectedWalletTXFEBuildFESubmit");
+
+    const gaslessTx = await buildGasslessMoveCall(x, y);
+    gaslessTx.sender = senderAddress;
+
+    const sponsorshipResp = await axios.post('/sponsorTx', {
+      gaslessTx
+    });
+
+    const { signature } = await signTransaction({
+      transaction: sponsorshipResp.data.txBytes
+    });
+
+    const resp = await suiClient.executeTransactionBlock({
+      transactionBlock: sponsorshipResp.data.txBytes,
+      signature: [sponsorshipResp.data.sponsorSig, signature]
+    })
+    return resp;
+  }
+
 
 
   // 1. Ask the backend to build, sponsor, sign, and execute a Move call transaction with the 
@@ -151,7 +184,28 @@ function App() {
       y: y,
       userId: "abc123"
     });
+
     return resp.data;
+  }
+
+
+
+  // 1. Build a GaslessTransaction representing a Move call using Shinami's 
+  //   buildGaslessTransaction helper function (which calls Transaction.build())
+  // Source code for this example Move function:
+  // https://github.com/shinamicorp/shinami-typescript-sdk/blob/90f19396df9baadd71704a0c752f759c8e7088b4/move_example/sources/math.move#L13
+  async function buildGasslessMoveCall(x: number, y: number): Promise<GaslessTransaction> {
+    return await buildGaslessTransaction(
+      (txb) => {
+        txb.moveCall({
+          target: `${EXAMPLE_MOVE_PACKAGE_ID}::math::add`,
+          arguments: [txb.pure.u64(x), txb.pure.u64(y)],
+        });
+      },
+      {
+        sui: suiClient
+      }
+    );
   }
 
 
@@ -178,7 +232,11 @@ function App() {
       <Box>
         <h3>Transaction result:</h3>
         {newSuccessfulResult ?
-          <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+          <p>
+            <label>{firstInt} + {secondInt} =  {latestResult} Digest: {latestDigest}</label>
+            <br />
+            <a href={`https://testnet.suivision.xyz/txblock/${latestDigest}`} target="_blank">[View on SuiVision]</a>
+          </p>
           :
           <label>N/A</label>
         }
