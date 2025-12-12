@@ -17,10 +17,10 @@
         "vite": "^6.3.2"
     },
     "dependencies": {
-        "@mysten/sui": "^1.28.2",
+        "@mysten/sui": "^1.45.2",
         "@radix-ui/themes": "^3.2.1",
         "@react-oauth/google": "^0.12.1",
-        "@shinami/clients": "^0.9.6",
+        "@shinami/clients": "^0.9.8",
         "antd": "^5.24.8",
         "axios": "^1.8.4",
         "dotenv-flow": "^4.1.0",
