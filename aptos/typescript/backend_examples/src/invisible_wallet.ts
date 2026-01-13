@@ -2,6 +2,9 @@
 import {
     AccountAddress,
     AccountAuthenticatorEd25519,
+    Aptos,
+    AptosConfig,
+    Network,
     PendingTransactionResponse,
     SimpleTransaction
 } from "@aptos-labs/ts-sdk";
@@ -9,11 +12,10 @@ import {
     KeyClient,
     WalletClient,
     ShinamiWalletSigner,
-    GasStationClient,
-    createAptosClient
+    GasStationClient
 } from "@shinami/clients/aptos";
 
-// 2. Copy your access key value. Must have rights to all Aptos services on Testnet.
+// 2. Copy your access key value. Must have rights to Wallet Services and Testnet Gas Station.
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
 // 3. Set up a walletId and its associated secret. Just for the tutorial. Your
@@ -21,12 +23,14 @@ const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 const WALLET_ID = "{{walletID}}";
 const WALLET_SECRET = "{{walletSecret}}";
 
-// 4. Instantiate your Shinami clients
-const aptosClient = createAptosClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+// 4. Instantiate your Shinami and Aptos clients
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 // Only required for `signSponsorAndSubmitTransactionInTwoSteps` example:
 const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+
+// Create an Aptos client for building, submitting, and fetching transactions
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // 5. Create a ShinamiWalletSinger to more easily manage the Invisible Wallet
 const signer = new ShinamiWalletSigner(
