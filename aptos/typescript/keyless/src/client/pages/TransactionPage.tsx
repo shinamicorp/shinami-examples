@@ -4,10 +4,13 @@ import axios from 'axios';
 import {
     AccountAddress,
     AccountAuthenticator,
+    Aptos,
+    AptosConfig,
     Deserializer,
     Hex,
     KeylessAccount,
     MoveString,
+    Network,
     PendingTransactionResponse,
     SimpleTransaction,
     UserTransactionResponse
@@ -15,14 +18,6 @@ import {
 import { getLocalKeylessAccount, deleteKeylessAccount } from "../keyless";
 import { deleteEphemeralKeyPair } from "../ephemeral";
 import GoogleLogout from 'react-google-button';
-import { createAptosClient } from "@shinami/clients/aptos";
-
-// Get our environmental variable from our .env.local file
-const VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY;
-
-if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
-    throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY .env.local variable not set');
-}
 
 const parseAddressFromURL = (url: string): string => {
     console.log("Parsing the wallet address from the URL");
@@ -47,7 +42,7 @@ const TransactionPage = () => {
     const keylessAccount = getLocalKeylessAccount();
 
     // Create an Aptos client for building, submitting, and fetching transactions.
-    const aptosClient = createAptosClient(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY);
+    const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 
     // 1. Get the user's input and update the page state.

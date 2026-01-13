@@ -5,29 +5,30 @@ import dotenvFlow from 'dotenv-flow';
 
 import {
   AccountAddress,
-  SimpleTransaction,
-  MoveString,
+  AccountAuthenticator,
+  Aptos,
+  AptosConfig,
   Deserializer,
   Hex,
-  AccountAuthenticator
+  MoveString,
+  Network,
+  SimpleTransaction
 } from "@aptos-labs/ts-sdk";
-
-import { createAptosClient } from "@shinami/clients/aptos";
 
 // Get our environmental variable from our .env.local file
 dotenvFlow.config();
-const GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY = process.env.GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY;
+const GAS_STATION_TESTNET_ACCESS_KEY = process.env.GAS_STATION_TESTNET_ACCESS_KEY;
 
-if (!(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY)) {
-  throw Error('GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY .env.local variable not set');
+if (!(GAS_STATION_TESTNET_ACCESS_KEY)) {
+  throw Error('GAS_STATION_TESTNET_ACCESS_KEY .env.local variable not set');
 }
 
 
-// Create an Aptos client for building and submitting transactions.
-const aptosClient = createAptosClient(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY);
+// Create an Aptos client for building transactions.
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // Create Shinami clients for sponsoring transactions and for our Invisible Wallet operations.
-const gasClient = new GasStationClient(GAS_STATION_PLUS_NODE_TESTNET_ACCESS_KEY);
+const gasClient = new GasStationClient(GAS_STATION_TESTNET_ACCESS_KEY);
 
 
 // initialize our server

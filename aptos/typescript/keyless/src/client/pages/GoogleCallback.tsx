@@ -1,18 +1,17 @@
 import { jwtDecode } from 'jwt-decode';
 import { getLocalEphemeralKeyPair } from "../ephemeral";
-import { EphemeralKeyPair } from '@aptos-labs/ts-sdk';
+import {
+    Aptos,
+    AptosConfig,
+    EphemeralKeyPair,
+    Network
+} from '@aptos-labs/ts-sdk';
 import { storeKeylessAccount } from "../keyless";
-import { createAptosClient } from "@shinami/clients/aptos";
 import { useNavigate } from "react-router-dom";
 
-// Get our environmental variable from our .env.local file
-const VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY;
 
-if (!(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY)) {
-    throw Error('VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY .env.local variable not set');
-}
-
-const aptosClient = createAptosClient(VITE_SHINAMI_PUBLIC_APTOS_NODE_TESTNET_API_KEY);
+// Create an Aptos client for keyless operations
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 const GoogleCallbackPage = () => {
 
     const navigate = useNavigate();
