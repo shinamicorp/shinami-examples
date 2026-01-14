@@ -18,7 +18,8 @@ import {
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 
-// Create an Aptos client for building, submitting, and fetching transactions
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 function App() {

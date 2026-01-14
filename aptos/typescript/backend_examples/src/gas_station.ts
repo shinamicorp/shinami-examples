@@ -17,10 +17,11 @@ import { readFileSync } from "fs";
 import { GasStationClient } from "@shinami/clients/aptos";
 
 // Create a Shinami Gas Station client for sponsoring our transactions
-const SHINAMI_TESTNET_GAS_STATION_API_KEY = "SHINAMI_TESTNET_GAS_STATION_API_KEY";
-const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_STATION_API_KEY);
+const TESTNET_APTOS_GAS_STATION_API_KEY = "TESTNET_APTOS_GAS_STATION_API_KEY";
+const gasStationClient = new GasStationClient(TESTNET_APTOS_GAS_STATION_API_KEY);
 
-// Create an Aptos client for building, submitting, and fetching transactions
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // **** 

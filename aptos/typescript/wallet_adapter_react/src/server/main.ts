@@ -2,9 +2,9 @@ import express from "express";
 import ViteExpress from "vite-express";
 import {
   GasStationClient,
-  WalletClient,
+  KeyClient,
   ShinamiWalletSigner,
-  KeyClient
+  WalletClient
 } from "@shinami/clients/aptos";
 import dotenvFlow from 'dotenv-flow';
 
@@ -38,7 +38,8 @@ const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
-// Create an Aptos client for building, submitting, and fetching transactions
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // Create our Invisible Wallet 

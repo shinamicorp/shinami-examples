@@ -9,10 +9,10 @@ import {
     SimpleTransaction
 } from "@aptos-labs/ts-sdk";
 import {
+    GasStationClient,
     KeyClient,
-    WalletClient,
     ShinamiWalletSigner,
-    GasStationClient
+    WalletClient
 } from "@shinami/clients/aptos";
 
 // 2. Copy your access key value. Must have rights to Wallet Services and Testnet Gas Station.
@@ -29,7 +29,8 @@ const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 // Only required for `signSponsorAndSubmitTransactionInTwoSteps` example:
 const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
 
-// Create an Aptos client for building, submitting, and fetching transactions
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
 const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // 5. Create a ShinamiWalletSinger to more easily manage the Invisible Wallet
