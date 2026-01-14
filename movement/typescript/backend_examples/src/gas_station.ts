@@ -19,10 +19,10 @@ import { GasStationClient } from "@shinami/clients/aptos";
 // Create a Shinami Gas Station client for sponsoring transactions 
 //  and a Movement node client for building and submitting them.
 //  You'll need an access key with Gas Station rights on Testnet.
-const SHINAMI_TESTNET_GAS_STATION_API_KEY = "{{MOVEMENT_TESTNET_GAS_STATION_API_ACCESS_KEY}}";
-const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_STATION_API_KEY);
+const TESTNET_MOVEMENT_GAS_STATION_API_KEY = "TESTNET_MOVEMENT_GAS_STATION_API_KEY";
+const gasStationClient = new GasStationClient(TESTNET_MOVEMENT_GAS_STATION_API_KEY);
 
-// Initialize the Movement client
+// Initialize the Movement client to use the public endpoint.
 const config = new AptosConfig({
     network: Network.CUSTOM,
     fullnode: 'https://testnet.movementnetwork.xyz/v1',
