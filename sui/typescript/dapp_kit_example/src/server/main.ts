@@ -65,7 +65,7 @@ ViteExpress.listen(app, 3000, () =>
 app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
-
+    // We'll set the sender as a part of this request.
     const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
     res.json(sponsorAndExecuteResp);
   } catch (err) {
@@ -73,6 +73,23 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
   }
 });
 
+
+// Endpoint to: 
+// 1. Sponsor a transaction built on the FE
+// 2. Return the sponsorship info the FE
+app.post('/sponsorTx', async (req, res, next) => {
+  try {
+    const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
+
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
 
 
 // Endpoint to:
@@ -83,11 +100,15 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
 app.post('/buildSponsoredtx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
+    // Set the sender before sponsorship
     gaslessTx.sender = req.body.sender;
-
     const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
 
-    res.json(sponsoredTx);
+    res.json({
+      txBytes: sponsoredTx.txBytes,
+      sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
+    });
+
   } catch (err) {
     next(err);
   }

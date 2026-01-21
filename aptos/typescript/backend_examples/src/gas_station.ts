@@ -1,23 +1,28 @@
 import {
-    SingleKeyAccount,
     AccountAddress,
-    SimpleTransaction,
-    MultiAgentTransaction,
-    MoveString,
-    SigningSchemeInput,
-    PendingTransactionResponse,
+    Aptos,
+    AptosConfig,
     Ed25519PrivateKey,
+    MoveString,
+    MultiAgentTransaction,
+    Network,
+    PendingTransactionResponse,
     PrivateKey,
-    PrivateKeyVariants
+    PrivateKeyVariants,
+    SigningSchemeInput,
+    SimpleTransaction,
+    SingleKeyAccount
 } from "@aptos-labs/ts-sdk";
 import { readFileSync } from "fs";
-import { GasStationClient, createAptosClient } from "@shinami/clients/aptos";
+import { GasStationClient } from "@shinami/clients/aptos";
 
-// Create a Shinami Gas Station client for sponsoring our transactions 
-//  and a Shinami REST API client for building and submitting them.
-const SHINAMI_TESTNET_GAS_AND_REST_API_KEY = "{{APTOS_TESTNET_GAS_STATION_AND_REST_API_ACCESS_KEY}}";
-const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
-const aptosClient = createAptosClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
+// Create a Shinami Gas Station client for sponsoring our transactions
+const TESTNET_APTOS_GAS_STATION_API_KEY = "TESTNET_APTOS_GAS_STATION_API_KEY";
+const gasStationClient = new GasStationClient(TESTNET_APTOS_GAS_STATION_API_KEY);
+
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // **** 
 // Code for generating two reusable, funded accounts for testing purposes
@@ -209,7 +214,7 @@ async function checkFundBalanceAndDepositIfNeeded(fundedSenderAccount: SingleKey
     const STANDARD_DEPOSIT_AMOUNT = 1000;
 
     // Deposit address can be null - see our Help Center for how to generate an address: 
-    //   https://docs.shinami.com/docs/aptos-gas-station-faq
+    //   https://docs.shinami.com/help-center/aptos/gas-station-faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund%3F
     if (depositAddress && ((balance - inFlight) < MIN_FUND_BALANCE_OCTA)) {
         // Create a SimpleTransaction that transfers APT from the sender to your Gas Station fund
         const transferTx = await aptosClient.transferCoinTransaction({

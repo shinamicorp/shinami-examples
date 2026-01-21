@@ -11,7 +11,7 @@ import {
 import { Transaction } from "@mysten/sui/transactions";
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 
-// 2. Copy your access key value
+// 2. Copy your access key value. Must have Testnet rights to all Shinami services.
 const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 
 // 3. Set up a wallet id and an associated secret

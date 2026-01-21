@@ -1,0 +1,15 @@
+[package]
+name = "test"
+version = "1.0.0"
+authors = []
+
+[addresses]
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement-mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

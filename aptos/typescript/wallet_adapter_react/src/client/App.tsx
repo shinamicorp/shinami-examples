@@ -3,26 +3,26 @@ import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useState } from "react";
 import axios from 'axios';
 import {
-  PendingTransactionResponse,
-  UserTransactionResponse,
-  SimpleTransaction,
-  Deserializer,
+  AccountAddress,
   AccountAuthenticator,
+  Aptos,
+  AptosConfig,
+  Deserializer,
   Hex,
   MoveString,
-  AccountAddress
+  Network,
+  PendingTransactionResponse,
+  SimpleTransaction,
+  UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
-import { createAptosClient } from "@shinami/clients/aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { WalletSelector as AntdWalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { WalletConnector as MuiWalletSelector } from "@aptos-labs/wallet-adapter-mui-design";
 
-const SHINAMI_APTOS_REST_API_KEY = import.meta.env.VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY;
-if (!(SHINAMI_APTOS_REST_API_KEY)) {
-  throw Error('VITE_SHINAMI_PUBLIC_APTOS_TESTNET_NODE_API_KEY .env.local variable not set');
-}
 
-// Set up an Aptos client for building, submitting, and fetching transactions
-const aptosClient = createAptosClient(SHINAMI_APTOS_REST_API_KEY);
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 function App() {
   const {
@@ -55,7 +55,7 @@ function App() {
       if (currentAccount) {
         pendingTxResponse =
           await connectedWalletTxFEBuildBESubmit(message, currentAccount.toString());
-        //  await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
+        // await connectedWalletTxBEBuildFESubmit(message, currentAccount.toString());
         // await connectedWalletTxBEBuildBESubmit(message, currentAccount.toString());
         // await connectedWalletTxFEBuildFESubmit(message, currentAccount.toString());
       } else {
@@ -85,7 +85,7 @@ function App() {
     if (executedTransaction.success) {
       for (var element in executedTransaction.events) {
         if (executedTransaction.events[element].type == "0xc13c3641ba3fc36e6a62f56e5a4b8a1f651dc5d9dc280bd349d5e4d0266d0817::message::MessageChange") {
-          setLatestResult(executedTransaction.events[element].data.to_message);
+          setLatestResult(`previous message: "${executedTransaction.events[element].data.from_message}" -> new message: "${executedTransaction.events[element].data.to_message}"`);
         }
       }
       setLatestDigest(txHash);
@@ -245,7 +245,7 @@ function App() {
 
   return (
     <>
-      <h1>Shinami Sponsored Transactions with @aptos-labs/wallet-adapter-react</h1>
+      <h1>Shinami Sponsored Transactions on Aptos</h1>
       <h3>Set a short message</h3>
       <form onSubmit={executeTransaction}>
         <div>
@@ -256,13 +256,17 @@ function App() {
       </form>
       <h3>Transaction result:</h3>
       {newSuccessfulResult ?
-        <label>Latest Succesful Digest: {latestDigest} Message Set To:  {latestResult} </label>
+        <p>
+          <label>Latest Succesful Digest: {latestDigest} <br /> {latestResult} </label>
+          <br />
+          <a href={`https://explorer.aptoslabs.com/txn/${latestDigest}?network=testnet`} target="_blank">[View on Aptos Exlorer]</a>
+        </p>
         :
         <label>Latest Successful Digest: N/A</label>
       }
-      <h3>Connect a wallet to be the sender. Otherwise use a backend Shinami Invisible Wallet.</h3>
+      <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
-      <WalletSelector />
+      <MuiWalletSelector />
     </>
   );
 };

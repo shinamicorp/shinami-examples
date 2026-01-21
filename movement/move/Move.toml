@@ -1,0 +1,16 @@
+[package]
+name = "hello_blockchain"
+version = "1.0.0"
+authors = []
+
+[addresses]
+hello_blockchain = "0xe56b2729723446cd0836a7d1273809491030ccf2ec9935d598bfdf0bffee4486"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement-mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
