@@ -16,7 +16,9 @@ import {
   UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { WalletSelector as AntdWalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
+import { WalletConnector as MuiWalletSelector } from "@aptos-labs/wallet-adapter-mui-design";
+
 
 // Create an Aptos client for building, submitting, and fetching transactions.
 // This uses the default Aptos public endpoint.
@@ -264,7 +266,7 @@ function App() {
       }
       <h3>Connect a wallet to be the sender. Otherwise a backend Shinami Invisible Wallet will be used.</h3>
       <label>Sender = {currentAccount ? "connected wallet address: " + currentAccount : "backend Shinami Invisible Wallet"} </label>
-      <WalletSelector />
+      <MuiWalletSelector />
     </>
   );
 };
