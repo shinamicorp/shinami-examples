@@ -1,24 +1,28 @@
 import {
-    SingleKeyAccount,
     AccountAddress,
-    SimpleTransaction,
-    MultiAgentTransaction,
-    MoveString,
-    SigningSchemeInput,
-    PendingTransactionResponse,
+    Aptos,
+    AptosConfig,
     Ed25519PrivateKey,
+    MoveString,
+    MultiAgentTransaction,
+    Network,
+    PendingTransactionResponse,
     PrivateKey,
-    PrivateKeyVariants
+    PrivateKeyVariants,
+    SigningSchemeInput,
+    SimpleTransaction,
+    SingleKeyAccount
 } from "@aptos-labs/ts-sdk";
 import { readFileSync } from "fs";
-import { GasStationClient, createAptosClient } from "@shinami/clients/aptos";
+import { GasStationClient } from "@shinami/clients/aptos";
 
-// Create a Shinami Gas Station client for sponsoring our transactions 
-//  and a Shinami REST API client for building and submitting them.
-//  You'll need an access key with Gas Station and Node Service rights on Testnet.
-const SHINAMI_TESTNET_GAS_AND_REST_API_KEY = "{{APTOS_TESTNET_GAS_STATION_AND_REST_API_ACCESS_KEY}}";
-const gasStationClient = new GasStationClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
-const aptosClient = createAptosClient(SHINAMI_TESTNET_GAS_AND_REST_API_KEY);
+// Create a Shinami Gas Station client for sponsoring our transactions
+const TESTNET_APTOS_GAS_STATION_API_KEY = "TESTNET_APTOS_GAS_STATION_API_KEY";
+const gasStationClient = new GasStationClient(TESTNET_APTOS_GAS_STATION_API_KEY);
+
+// Create an Aptos client for building, submitting, and fetching transactions.
+// This uses the default Aptos public endpoint.
+const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 
 // **** 
 // Code for generating two reusable, funded accounts for testing purposes

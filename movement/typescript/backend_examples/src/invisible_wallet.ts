@@ -23,7 +23,7 @@ const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
 const WALLET_ID = "{{walletID}}";
 const WALLET_SECRET = "{{walletSecret}}";
 
-// 4a. Instantiate your Movement client
+// 4a. Instantiate the Movement client using the public endpoint.
 const config = new AptosConfig({
     network: Network.CUSTOM,
     fullnode: 'https://testnet.movementnetwork.xyz/v1',
