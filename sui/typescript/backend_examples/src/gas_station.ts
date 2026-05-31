@@ -2,20 +2,22 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
 import { Inputs, Transaction } from "@mysten/sui/transactions";
+import { fromB64 } from "@mysten/sui/utils";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { bcs } from '@mysten/sui/bcs';
 import {
   GasStationClient,
-  createSuiClient,
   buildGaslessTransaction,
   GaslessTransaction
 } from "@shinami/clients/sui";
 
-// 2. Copy your Testnet Gas Station and Node Service key value
-const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
+// 2. Copy your Testnet Gas Station API key value
+const GAS_STATION_ACCESS_KEY = "KEY_VALUE";
 
 // 3. Set up your Gas Station and Node Service clients
-const nodeClient = createSuiClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
-const gasStationClient = new GasStationClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
+// Use any Sui RPC provider of your choice. It MUST target the same network as GAS_ACCESS_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+const gasStationClient = new GasStationClient(GAS_STATION_ACCESS_KEY);
 
 // 4. Create a KeyPair to act as the sender
 async function generateSecretKey(): Promise<string> {
@@ -135,22 +137,20 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
   gaslessTx: GaslessTransaction, keypair: Ed25519Keypair): Promise<string> {
 
   //  1. Send the GaslessTransaction to Shinami Gas Station for sponsorship.
-  let sponsoredResponse = await gasStationClient.sponsorTransaction(
+  const sponsorshipResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // when gaslessTx.gasBudget is undefined we take advantage of Shinami auto-budgeting
   );
   console.log("\nsponsorTransactionBlock response (includes sender 'signature' and 'txBytes' with gas info now included):");
-  console.log(sponsoredResponse);
+  console.log(sponsorshipResponse);
 
   // 2. Sign the full transaction payload with the sender's key.
-  let senderSig = await Transaction.from(sponsoredResponse?.txBytes).sign(
-    { signer: keypair }
-  );
+  const { signature: senderSignature } = await keypair.signTransaction(fromB64(sponsorshipResponse?.txBytes));
 
   // 3. Submit the full transaction payload, along with the gas owner 
   // and sender signatures, for execution on the Sui network
   let executeResponse = await nodeClient.executeTransactionBlock({
-    transactionBlock: sponsoredResponse?.txBytes,
-    signature: [senderSig?.signature, sponsoredResponse?.signature]
+    transactionBlock: sponsorshipResponse?.txBytes,
+    signature: [senderSignature, sponsorshipResponse?.signature]
   });
 
   return executeResponse.digest;

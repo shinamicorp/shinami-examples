@@ -2,7 +2,6 @@
 import {
   WalletClient,
   KeyClient,
-  createSuiClient,
   GasStationClient,
   buildGaslessTransaction,
   ShinamiWalletSigner,
@@ -10,18 +9,21 @@ import {
 } from "@shinami/clients/sui";
 import { Transaction } from "@mysten/sui/transactions";
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 
 // 2. Copy your access key value. Must have Testnet rights to all Shinami services.
-const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
+const GAS_AND_WALLET_KEY = "KEY_VALUE";
 
 // 3. Set up a wallet id and an associated secret
 const WALLET_ONE_ID = "{{walletOneId}}";
 const WALLET_ONE_SECRET = "{{walletOneSecret}}";
 
 // 4. Instantiate your Shinami clients
-const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const keyClient = new KeyClient(GAS_AND_WALLET_KEY);
+const walletClient = new WalletClient(GAS_AND_WALLET_KEY);
+// And your Node client. Use any Sui RPC provider of your choice. 
+// It MUST target the same network as GAS_AND_WALLET_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
 
 // 5. Create a signer for the Invisible Wallet
 const signer = new ShinamiWalletSigner(
@@ -60,7 +62,7 @@ console.log("status:", txInfo.effects?.status.status);
 
 // 9. (optional) Uncomment th enext line to sign a personal message with 
 //      the Invisible Wallet and then verify that the wallet signed it.
-// await signAndVerifyPersonalMessage(signer);
+await signAndVerifyPersonalMessage(signer);
 
 
 
@@ -83,7 +85,7 @@ async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
   gaslessTx: GaslessTransaction): Promise<string> {
 
   // 1. Sponsor the GaslessTransaction with a call to Gas Station
-  const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+  const gasStationClient = new GasStationClient(GAS_AND_WALLET_KEY);
   gaslessTx.sender = await signer.getAddress();
   const sponsoredResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
