@@ -60,9 +60,9 @@ console.log("\ntxDigest: ", txDigest);
 console.log("status:", txInfo.effects?.status.status);
 
 
-// 9. (optional) Uncomment th enext line to sign a personal message with 
+// 9. (optional) Uncomment the next line to sign a personal message with 
 //      the Invisible Wallet and then verify that the wallet signed it.
-await signAndVerifyPersonalMessage(signer);
+// await signAndVerifyPersonalMessage(signer);
 
 
 

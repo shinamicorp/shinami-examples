@@ -55,7 +55,7 @@ function App() {
       if (currentAccount) {
         suiTxResponse = await
           connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
-        //  connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
+        // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
         // connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
       }
       else {
