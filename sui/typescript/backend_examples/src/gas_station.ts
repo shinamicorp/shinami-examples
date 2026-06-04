@@ -12,7 +12,7 @@ import {
 } from "@shinami/clients/sui";
 
 // 2. Copy your Testnet Gas Station API key value
-const GAS_STATION_ACCESS_KEY = "KEY_VALUE";
+const GAS_STATION_ACCESS_KEY = "{{API_KEY_VALUE}}";
 
 // 3. Set up your Gas Station and Node Service clients
 // Use any Sui RPC provider of your choice. It MUST target the same network as GAS_ACCESS_KEY.

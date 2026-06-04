@@ -12,7 +12,7 @@ import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 
 // 2. Copy your access key value. Must have Testnet rights to all Shinami services.
-const GAS_AND_WALLET_KEY = "KEY_VALUE";
+const GAS_AND_WALLET_KEY = "{{API_KEY_VALUE}}";
 
 // 3. Set up a wallet id and an associated secret
 const WALLET_ONE_ID = "{{walletOneId}}";
