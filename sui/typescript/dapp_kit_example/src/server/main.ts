@@ -2,7 +2,6 @@ import express from "express";
 import ViteExpress from "vite-express";
 import {
   GasStationClient,
-  createSuiClient,
   buildGaslessTransaction,
   WalletClient,
   ShinamiWalletSigner,
@@ -10,26 +9,31 @@ import {
   GaslessTransaction
 } from "@shinami/clients/sui";
 import dotenvFlow from 'dotenv-flow';
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+
 
 // Get our environmental variables from our .env.local file
 dotenvFlow.config();
-const ALL_SERVICES_TESTNET_ACCESS_KEY = process.env.ALL_SERVICES_TESTNET_ACCESS_KEY;
+const GAS_AND_WALLET_TESTNET_ACCESS_KEY = process.env.GAS_AND_WALLET_TESTNET_ACCESS_KEY;
 const EXAMPLE_MOVE_PACKAGE_ID = process.env.EXAMPLE_MOVE_PACKAGE_ID;
 const USER123_WALLET_SECRET = process.env.USER123_WALLET_SECRET;
 const USER123_WALLET_ID = process.env.USER123_WALLET_ID;
 
-if (!(ALL_SERVICES_TESTNET_ACCESS_KEY && EXAMPLE_MOVE_PACKAGE_ID)) {
-  throw Error('ALL_SERVICES_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env.local variables not set');
+if (!(GAS_AND_WALLET_TESTNET_ACCESS_KEY && EXAMPLE_MOVE_PACKAGE_ID)) {
+  throw Error('GAS_AND_WALLET_TESTNET_ACCESS_KEY and/or EXAMPLE_MOVE_PACKAGE_ID .env.local variables not set');
 }
 if (!(USER123_WALLET_ID && USER123_WALLET_SECRET)) {
   throw Error('USER123_WALLET_ID and/or USER123_WALLET_SECRET .env.local varaibles not set');
 }
 
 // Create Shinami clients for sponsoring and executing transactions and for our Invisible Wallet operations.
-const nodeClient = createSuiClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const gasClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+const gasClient = new GasStationClient(GAS_AND_WALLET_TESTNET_ACCESS_KEY);
+const keyClient = new KeyClient(GAS_AND_WALLET_TESTNET_ACCESS_KEY);
+const walletClient = new WalletClient(GAS_AND_WALLET_TESTNET_ACCESS_KEY);
+
+// Create a Node client. Use any Sui RPC provider of your choice. 
+// It MUST target the same network as GAS_AND_WALLET_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
 
 // Create our Invisible Wallet 
 const signer = new ShinamiWalletSigner(
