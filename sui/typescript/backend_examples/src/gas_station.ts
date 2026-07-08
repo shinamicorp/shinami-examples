@@ -55,10 +55,10 @@ const gaslessTx = await
   clockMoveCallGaslessTransaction();
 // clockMoveCallGaslessTransactionAlternateVersion();
 // clockMoveCallGaslessTransactionOfflineBuildManualBudget();
-// checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
+// checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID, SENDER_ADDRESS);
 // splitCoinOwnedByGaslessTransaction(COIN_TO_SPLIT_FROM_ID, SENDER_ADDRESS);
-// mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID);
-// transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, RECIPIENT_ADDRESS);
+// mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID, SENDER_ADDRESS);
+// transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, SENDER_ADDRESS, RECIPIENT_ADDRESS);
 
 if (gaslessTx) {
   gaslessTx.sender = SENDER_ADDRESS;
@@ -174,7 +174,7 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
 //
 // -- Check a fund's balance and deposit more SUI in the fund if it's low -- //
 //
-async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string):
+async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string, senderAddress: string):
   Promise<GaslessTransaction | undefined> {
   const MIN_FUND_BALANCE_MIST = 50_000_000_000; // 50 SUI
   const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
@@ -187,6 +187,7 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
     // works if there's a little SUI left.
     return await transferObjectToRecipientGaslessTransaction(
       suiCoinObjectIdToDeposit,
+      senderAddress,
       depositAddress
     );
   }
@@ -214,6 +215,7 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
       ]);
       // each new object created in a transaction must be sent to an owner
       txb.transferObjects([coin1, coin2], txb.pure(bcs.Address.serialize(recipientAddress)));
+      txb.setSender(recipientAddress);
     },
     {
       sui: nodeClient
@@ -224,7 +226,7 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
 //  Transfer one or more objects owned by the sender to the recipient.
 //  An easy example is a small coin you created with the above transaction.
 //  We also call this function inside the `checkFundBalanceAndDepositIfNeeded` function.
-async function transferObjectToRecipientGaslessTransaction(objectID: string, recipientAddress: string):
+async function transferObjectToRecipientGaslessTransaction(objectID: string, senderAddress: string, recipientAddress: string):
   Promise<GaslessTransaction> {
   let gaslessTx = await buildGaslessTransaction(
     async (txb) => {
@@ -232,6 +234,7 @@ async function transferObjectToRecipientGaslessTransaction(objectID: string, rec
         [txb.object(objectID)],
         txb.pure(bcs.Address.serialize(recipientAddress))
       );
+      txb.setSender(senderAddress);
     },
     {
       sui: nodeClient
@@ -242,11 +245,12 @@ async function transferObjectToRecipientGaslessTransaction(objectID: string, rec
 
 //  Merge one coin (or more) into another, destroying the 
 //   small coin(s) and increasing the value of the large one.
-async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string):
+async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string, senderAddress: string):
   Promise<GaslessTransaction> {
   return await buildGaslessTransaction(
     async (txb) => {
       txb.mergeCoins(txb.object(targetCoinID), [txb.object(coinToMergeID)]);
+      txb.setSender(senderAddress);
     },
     {
       sui: nodeClient

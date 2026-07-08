@@ -72,7 +72,7 @@ ViteExpress.listen(app, 3000, () =>
 // 3. Return the SuiTransactionBlockResponse to the FE
 app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
-    const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
+    const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y)
     // We'll set the sender as a part of this request.
     const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
     res.json(sponsorAndExecuteResp);
@@ -107,10 +107,13 @@ app.post('/sponsorTx', async (req, res, next) => {
 // Build and sponsor a Move call transaction with the given user input.
 app.post('/buildSponsoredtx', async (req, res, next) => {
   try {
+    console.log("attempting to build a tx");
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
+    console.log("built the tx!");
     // Set the sender before sponsorship
     gaslessTx.sender = req.body.sender;
     const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
+    console.log("successful sponsorship!");
 
     res.json({
       txBytes: sponsoredTx.txBytes,
