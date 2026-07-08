@@ -2,6 +2,8 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
 import { Inputs, Transaction } from "@mysten/sui/transactions";
+import { fromB64 } from "@mysten/sui/utils";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { bcs } from '@mysten/sui/bcs';
 import {
   GasStationClient,
@@ -9,19 +11,13 @@ import {
   GaslessTransaction
 } from "@shinami/clients/sui";
 
-import { SuiGrpcClient } from '@mysten/sui/grpc';
-import { fromBase64 } from "@mysten/sui/utils";
-
-// 2. Copy your Testnet Gas Station key value
-const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
+// 2. Copy your Testnet Gas Station API key value
+const GAS_STATION_ACCESS_KEY = "{{API_KEY_VALUE}}";
 
 // 3. Set up your Gas Station and Node Service clients
-const gasStationClient = new GasStationClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
-
-const nodeClient = new SuiGrpcClient({
-  baseUrl: 'https://fullnode.testnet.sui.io:443',
-  network: 'testnet',
-});
+// Use any Sui RPC provider of your choice. It MUST target the same network as GAS_ACCESS_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+const gasStationClient = new GasStationClient(GAS_STATION_ACCESS_KEY);
 
 // 4. Create a KeyPair to act as the sender
 async function generateSecretKey(): Promise<string> {
@@ -36,7 +32,7 @@ async function generateSecretKey(): Promise<string> {
 //  you'll need a fixed sender address. Your app should determine the best way to manage any 
 //  keys it controls.
 const ENCODED_SECRET_KEY = await generateSecretKey();
-const { scheme, secretKey } = decodeSuiPrivateKey(ENCODED_SECRET_KEY);
+const { schema, secretKey } = decodeSuiPrivateKey(ENCODED_SECRET_KEY);
 const keyPairFromSecretKey = Ed25519Keypair.fromSecretKey(secretKey);
 const SENDER_ADDRESS = keyPairFromSecretKey.toSuiAddress();
 console.log("sender address:", SENDER_ADDRESS);
@@ -68,16 +64,15 @@ if (gaslessTx) {
     gaslessTx, keyPairFromSecretKey
   );
 
-  console.log("digest", txDigest);
-
   // 7. Wait until the node has processed the transaction and print the status
   const txInfo = await nodeClient.waitForTransaction({
-    digest: txDigest
+    digest: txDigest,
+    options: { showEffects: true }
   });
 
   // You can look up the digest in a Sui explorer - make sure to switch to Testnet
   console.log("\ntxDigest: ", txDigest);
-  console.log("status:", txInfo.Transaction?.status);
+  console.log("status:", txInfo.effects?.status.status);
 }
 
 //
@@ -142,31 +137,23 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
   gaslessTx: GaslessTransaction, keypair: Ed25519Keypair): Promise<string> {
 
   //  1. Send the GaslessTransaction to Shinami Gas Station for sponsorship.
-  let sponsoredResponse = await gasStationClient.sponsorTransaction(
+  const sponsorshipResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // when gaslessTx.gasBudget is undefined we take advantage of Shinami auto-budgeting
   );
   console.log("\nsponsorTransactionBlock response (includes sender 'signature' and 'txBytes' with gas info now included):");
-  console.log(sponsoredResponse);
+  console.log(sponsorshipResponse);
 
   // 2. Sign the full transaction payload with the sender's key.
-  let senderSig = await Transaction.from(sponsoredResponse?.txBytes).sign(
-    { signer: keypair }
-  );
+  const { signature: senderSignature } = await keypair.signTransaction(fromB64(sponsorshipResponse?.txBytes));
 
   // 3. Submit the full transaction payload, along with the gas owner 
   // and sender signatures, for execution on the Sui network
-  const signatures = [senderSig?.signature, sponsoredResponse?.signature];
-  let response = await nodeClient.executeTransaction({
-    transaction: fromBase64(sponsoredResponse?.txBytes),
-    signatures: [senderSig?.signature, sponsoredResponse?.signature]
+  let executeResponse = await nodeClient.executeTransactionBlock({
+    transactionBlock: sponsorshipResponse?.txBytes,
+    signature: [senderSignature, sponsorshipResponse?.signature]
   });
 
-  if (!response.Transaction?.status?.success) {
-    const error = response.FailedTransaction?.effects;
-    throw new Error(`Transaction failed: ${error || 'Unknown error'}`);
-  }
-
-  return response.Transaction.digest;
+  return executeResponse.digest;
 }
 
 

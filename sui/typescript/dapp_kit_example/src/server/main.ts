@@ -9,7 +9,8 @@ import {
   GaslessTransaction
 } from "@shinami/clients/sui";
 import dotenvFlow from 'dotenv-flow';
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { SuiGrpcClient } from '@mysten/sui/grpc';
+import { fromBase64 } from "@mysten/sui/utils";
 
 
 // Get our environmental variables from our .env.local file
@@ -33,7 +34,10 @@ const walletClient = new WalletClient(GAS_AND_WALLET_TESTNET_ACCESS_KEY);
 
 // Create a Node client. Use any Sui RPC provider of your choice. 
 // It MUST target the same network as GAS_AND_WALLET_KEY.
-const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+const nodeClient = new SuiGrpcClient({
+  baseUrl: 'https://fullnode.testnet.sui.io:443',
+  network: 'mainnet',
+});
 
 // Create our Invisible Wallet 
 const signer = new ShinamiWalletSigner(
@@ -86,7 +90,7 @@ app.post('/sponsorTx', async (req, res, next) => {
     const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
 
     res.json({
-      txBytes: sponsoredTx.txBytes,
+      txBytes: fromBase64(sponsoredTx.txBytes),
       sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
     });
 
@@ -125,9 +129,9 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 // 2. Return the SuiTransactionBlockResponse to the FE
 app.post('/executeSponsoredTx', async (req, res, next) => {
   try {
-    const submitTxResp = await nodeClient.executeTransactionBlock({
-      transactionBlock: req.body.tx,
-      signature: [req.body.senderSig, req.body.sponsorSig]
+    const submitTxResp = await nodeClient.executeTransaction({
+      transaction: req.body.tx,
+      signatures: [req.body.senderSig, req.body.sponsorSig]
     });
 
     res.json(submitTxResp);

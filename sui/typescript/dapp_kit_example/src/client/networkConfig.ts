@@ -1,13 +1,12 @@
-import { getFullnodeUrl } from "@mysten/sui/client";
 import { createNetworkConfig } from "@mysten/dapp-kit";
 
 const { networkConfig } =
   createNetworkConfig({
     testnet: {
-      url: getFullnodeUrl('testnet'),
+      url: 'https://fullnode.testnet.sui.io:443',
     },
     mainnet: {
-      url: getFullnodeUrl('mainnet'),
+      url: 'https://fullnode.mainnet.sui.io:443',
     }
   });
 
