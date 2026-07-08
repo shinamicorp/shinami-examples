@@ -9,8 +9,4 @@ Examples to show you how to use Shinami's Gas Station and Wallet Services APIs. 
 - [Tutorial](https://docs.shinami.com/developer-guides/sui/tutorials/invisible-wallets)
 - `src/invisible_wallet.ts`: shows you how to create a wallet and submit a transaction where it's the sender, using Shinami Gas Station for transaction sponsorship.
 
-## Node Service read after write consistency example
-- [Guide](https://docs.shinami.com/developer-guides/sui/move-guides/common-questions#how-do-i-get-read-after-write-consistency%3F)
-- `src/read_after_write_consistency.ts`: shows you how to poll a Full-node to wait for it to have the results of a transaction
-
 All node requests use Mysten's free gRPC node. Mysten has a [guide for migrating from JSON-RPC to gRPC](https://sdk.mystenlabs.com/sui/migrations/sui-2.0/json-rpc-migration) as a part of it's [SDK 2.0 migration guide](https://sdk.mystenlabs.com/sui/migrations/sui-2.0).
