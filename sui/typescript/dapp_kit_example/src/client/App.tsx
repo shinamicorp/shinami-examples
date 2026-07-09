@@ -6,7 +6,6 @@ import {
   useCurrentClient,
   useDAppKit
 } from "@mysten/dapp-kit-react";
-import { SuiClientTypes } from "@mysten/sui/client";
 import axios from 'axios';
 import { fromBase64 } from "@mysten/sui/utils";
 import {
@@ -55,17 +54,17 @@ function App() {
     try {
       if (currentAccount) {
         txDigest = await
-          // connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
-          // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
-          connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
+          connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
+        // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
+        // connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
       }
       else {
         txDigest = await invisibleWalletTx(x, y);
-        console.log(txDigest);
+
       }
 
       if (txDigest) {
-        console.log("waiting for tx");
+        console.log("Polling for tx digest:", txDigest);
         waitForTxAndUpdateResult(txDigest);
       } else {
         console.log("Unable to find a digest returned from the backend.");
@@ -80,7 +79,6 @@ function App() {
   // has been checkpointed and propagated to the node, and the node returns 
   // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
-    console.log("waitForTxAndUpdateResult");
     const finalResult = await suiClient.waitForTransaction({
       digest: digest,
       include: {
@@ -88,8 +86,6 @@ function App() {
         events: true
       }
     });
-
-    console.log(finalResult);
 
     if (finalResult.Transaction?.effects && finalResult.Transaction?.effects && finalResult.Transaction?.status.success == true) {
       const resultObj = finalResult.Transaction?.events[0].json as AddCallEvent;
@@ -115,12 +111,10 @@ function App() {
       sender: senderAddress
     });
 
-    console.log("attempting to sign");
     const { signature } = await dAppKit.signTransaction({
       transaction: sponsorshipResp.data.txBytes
     });
 
-    console.log("attempting to execute");
     const resp = await axios.post('/executeSponsoredTx', {
       tx: sponsorshipResp.data.txBytes,
       sponsorSig: sponsorshipResp.data.sponsorSig,
@@ -162,18 +156,15 @@ function App() {
     console.log("connectedWalletTXFEBuildFESubmit");
 
     const gaslessTx = await buildGasslessMoveCall(x, y, senderAddress);
-    console.log("built a move call");
 
     gaslessTx.sender = senderAddress;
     const sponsorshipResp = await axios.post('/sponsorTx', {
       gaslessTx
     });
-    console.log("sponsored it:", sponsorshipResp.data.txBytes);
 
     const { signature } = await dAppKit.signTransaction({
       transaction: sponsorshipResp.data.txBytes
     });
-    console.log("signed it");
 
     const resp = await suiClient.executeTransaction({
       transaction: fromBase64(sponsorshipResp.data.txBytes),
