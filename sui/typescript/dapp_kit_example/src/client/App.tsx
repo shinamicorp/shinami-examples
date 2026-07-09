@@ -51,22 +51,22 @@ function App() {
     setFirstInt(x.toString());
     setsecondInt(y.toString());
 
-    let suiTxResponse = undefined;
+    let txDigest: string | undefined = undefined;
     try {
       if (currentAccount) {
-        suiTxResponse = await
+        txDigest = await
           // connectedWalletTxBEBuildBESubmit(x, y, currentAccount.address);
           // connectedWalletTxBEBuildFESubmit(x, y, currentAccount.address);
           connectedWalletTxFEBuildFESubmit(x, y, currentAccount.address);
-        console.log("Got a tx response");
       }
       else {
-        suiTxResponse = await invisibleWalletTx(x, y);
+        txDigest = await invisibleWalletTx(x, y);
+        console.log(txDigest);
       }
 
-      if (suiTxResponse.Transaction?.digest) {
-        console.log("waiting for result");
-        waitForTxAndUpdateResult(suiTxResponse.Transaction?.digest);
+      if (txDigest) {
+        console.log("waiting for tx");
+        waitForTxAndUpdateResult(txDigest);
       } else {
         console.log("Unable to find a digest returned from the backend.");
       }
@@ -80,6 +80,7 @@ function App() {
   // has been checkpointed and propagated to the node, and the node returns 
   // results for the digest. On the response, update the page accordingly.
   const waitForTxAndUpdateResult = async (digest: string) => {
+    console.log("waitForTxAndUpdateResult");
     const finalResult = await suiClient.waitForTransaction({
       digest: digest,
       include: {
@@ -87,6 +88,8 @@ function App() {
         events: true
       }
     });
+
+    console.log(finalResult);
 
     if (finalResult.Transaction?.effects && finalResult.Transaction?.effects && finalResult.Transaction?.status.success == true) {
       const resultObj = finalResult.Transaction?.events[0].json as AddCallEvent;
@@ -104,7 +107,7 @@ function App() {
   // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
   // 3. Ask the backend to execute the signed transaction.
   // 4. Return the SuiTransactionBlockResponse to the caller.
-  const connectedWalletTxBEBuildBESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiClientTypes.TransactionResult> => {
+  const connectedWalletTxBEBuildBESubmit = async (x: number, y: number, senderAddress: string): Promise<string | undefined> => {
     console.log("connectedWalletTxBEBuildBESubmit");
     const sponsorshipResp = await axios.post('/buildSponsoredtx', {
       x: x,
@@ -112,10 +115,12 @@ function App() {
       sender: senderAddress
     });
 
+    console.log("attempting to sign");
     const { signature } = await dAppKit.signTransaction({
       transaction: sponsorshipResp.data.txBytes
     });
 
+    console.log("attempting to execute");
     const resp = await axios.post('/executeSponsoredTx', {
       tx: sponsorshipResp.data.txBytes,
       sponsorSig: sponsorshipResp.data.sponsorSig,
@@ -128,7 +133,7 @@ function App() {
   // 2. Sign the sponsored transaction returned from the backend with the user's connected wallet.
   // 3. Submit the transaction to Fullnode for execution from the frontend.
   // 4. Return the SuiTransactionBlockResponse to the caller.
-  const connectedWalletTxBEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiClientTypes.TransactionResult> => {
+  const connectedWalletTxBEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<string | undefined> => {
     console.log("connectedWalletTxBEBuildFESubmit");
     const sponsorshipResp = await axios.post('/buildSponsoredtx', {
       x: x,
@@ -136,21 +141,16 @@ function App() {
       sender: senderAddress
     });
 
-    console.log("got the tx sponsored");
-
     const { signature } = await dAppKit.signTransaction({
       transaction: sponsorshipResp.data.txBytes
     });
-
-    console.log("signed the tx");
 
     const resp = await suiClient.executeTransaction({
       transaction: fromBase64(sponsorshipResp.data.txBytes),
       signatures: [sponsorshipResp.data.sponsorSig, signature]
     });
 
-    console.log("executed the tx");
-    return resp;
+    return resp.Transaction?.digest;
   }
 
   // 1. Build a Move call transaction with the given user input.
@@ -158,28 +158,28 @@ function App() {
   // 3. Sign the sponsored transaction returned from the backend with the user's connected wallet.
   // 4. Submit the transaction to a Fullnode from the frontend.
   // 4. Return the SuiTransactionBlockResponse to the caller.
-  const connectedWalletTxFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<SuiClientTypes.TransactionResult> => {
+  const connectedWalletTxFEBuildFESubmit = async (x: number, y: number, senderAddress: string): Promise<string | undefined> => {
     console.log("connectedWalletTXFEBuildFESubmit");
 
     const gaslessTx = await buildGasslessMoveCall(x, y, senderAddress);
-    console.log("built the tx");
+    console.log("built a move call");
 
     gaslessTx.sender = senderAddress;
     const sponsorshipResp = await axios.post('/sponsorTx', {
       gaslessTx
     });
-    console.log("sponsored the tx!");
+    console.log("sponsored it:", sponsorshipResp.data.txBytes);
 
     const { signature } = await dAppKit.signTransaction({
       transaction: sponsorshipResp.data.txBytes
     });
-    console.log("signed the tx!!");
+    console.log("signed it");
 
     const resp = await suiClient.executeTransaction({
       transaction: fromBase64(sponsorshipResp.data.txBytes),
       signatures: [sponsorshipResp.data.sponsorSig, signature]
     });
-    return resp;
+    return resp.Transaction?.digest;
   }
 
 
@@ -188,7 +188,7 @@ function App() {
   //    given user input. The sender is the user's Invisible Wallet, which in this example app
   //    is just a hard-coded wallet for simplicity.
   // 2. Return the SuiTransactionBlockResponse to the caller.
-  const invisibleWalletTx = async (x: number, y: number): Promise<SuiClientTypes.TransactionResult> => {
+  const invisibleWalletTx = async (x: number, y: number): Promise<string> => {
     console.log("invisibleWalletTx");
     const resp = await axios.post('/invisibleWalletTx', {
       x: x,

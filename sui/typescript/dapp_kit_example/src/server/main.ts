@@ -74,8 +74,11 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y)
     // We'll set the sender as a part of this request.
-    const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
-    res.json(sponsorAndExecuteResp);
+    const submitTxResp = await signer.executeGaslessTransaction(gaslessTx, ["effects"]);
+    console.log(submitTxResp);
+    let digest = submitTxResp.transaction?.effects?.digest;
+    console.log(digest);
+    res.json(digest);
   } catch (err) {
     next(err);
   }
@@ -90,7 +93,7 @@ app.post('/sponsorTx', async (req, res, next) => {
     const sponsoredTx = await gasClient.sponsorTransaction(req.body.gaslessTx);
 
     res.json({
-      txBytes: fromBase64(sponsoredTx.txBytes),
+      txBytes: sponsoredTx.txBytes,
       sponsorSig: sponsoredTx.signature // not needed by FE when BE submits, but easy to pass back and forth
     });
 
@@ -107,13 +110,13 @@ app.post('/sponsorTx', async (req, res, next) => {
 // Build and sponsor a Move call transaction with the given user input.
 app.post('/buildSponsoredtx', async (req, res, next) => {
   try {
-    console.log("attempting to build a tx");
+    console.log("attempting to build a tx with", req.body.x, "and", req.body.y);
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
-    console.log("built the tx!");
     // Set the sender before sponsorship
     gaslessTx.sender = req.body.sender;
+    console.log("sponsoring the tx");
     const sponsoredTx = await gasClient.sponsorTransaction(gaslessTx);
-    console.log("successful sponsorship!");
+    console.log("sponsored!");
 
     res.json({
       txBytes: sponsoredTx.txBytes,
@@ -132,12 +135,19 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 // 2. Return the SuiTransactionBlockResponse to the FE
 app.post('/executeSponsoredTx', async (req, res, next) => {
   try {
+    console.log("submitting tx");
     const submitTxResp = await nodeClient.executeTransaction({
-      transaction: req.body.tx,
-      signatures: [req.body.senderSig, req.body.sponsorSig]
+      transaction: fromBase64(req.body.tx),
+      signatures: [req.body.senderSig, req.body.sponsorSig],
+      include: {
+        effects: true
+      }
     });
 
-    res.json(submitTxResp);
+    console.log(submitTxResp);
+    let digest = submitTxResp.Transaction?.digest;
+    console.log(digest);
+    res.json(digest);
   } catch (err) {
     next(err);
   }
