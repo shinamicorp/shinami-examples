@@ -54,7 +54,6 @@ const txDigest = await
 // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
 
 if (txDigest != undefined) {
-
   const txInfo = await nodeClient.waitForTransaction({
     digest: txDigest
   });
@@ -77,8 +76,10 @@ async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner,
   gaslessTx: GaslessTransaction): Promise<string | undefined> {
   const sponsorSignAndExecuteResponse = await signer.executeGaslessTransaction(
     gaslessTx, // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
-  )
-  return sponsorSignAndExecuteResponse.transaction?.digest;
+    ["balance_changes", "transaction.digest"]
+  );
+
+  return sponsorSignAndExecuteResponse.transaction?.transaction?.digest;
 }
 
 

@@ -48,14 +48,14 @@ const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 //   c. Set the values of `PKEY_ONE` and `PKEY_TWO` to the private key values printed to the console in Step 1.
 //   d. Save the file, transpile with tsc, and run with node build/gas_station.js
 
-const PKEY_ONE = "ed25519-priv-0x...";
-const fundedSenderAccount = new SingleKeyAccount({
-    privateKey: new Ed25519PrivateKey(PKEY_ONE)
-});
-const PKEY_TWO = "ed25519-priv-0x...";
-const fundedSecondarySignerAccount = new SingleKeyAccount({
-    privateKey: new Ed25519PrivateKey(PKEY_TWO)
-});
+// const PKEY_ONE = "ed25519-priv-0x...";
+// const fundedSenderAccount = new SingleKeyAccount({
+//     privateKey: new Ed25519PrivateKey(PKEY_ONE)
+// });
+// const PKEY_TWO = "ed25519-priv-0x...";
+// const fundedSecondarySignerAccount = new SingleKeyAccount({
+//     privateKey: new Ed25519PrivateKey(PKEY_TWO)
+// });
 
 // End step 3
 

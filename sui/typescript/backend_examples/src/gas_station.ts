@@ -13,10 +13,10 @@ import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { fromBase64 } from "@mysten/sui/utils";
 
 // 2. Copy your Testnet Gas Station key value
-const GAS_AND_NODE_TESTNET_ACCESS_KEY = "{{gasAndNodeServiceTestnetAccessKey}}";
+const GAS_STATION_TESTNET_ACCESS_KEY = "{{gasStationTestnetAccessKey}}";
 
 // 3. Set up your Gas Station and Node Service clients
-const gasStationClient = new GasStationClient(GAS_AND_NODE_TESTNET_ACCESS_KEY);
+const gasStationClient = new GasStationClient(GAS_STATION_TESTNET_ACCESS_KEY);
 
 const nodeClient = new SuiGrpcClient({
   baseUrl: 'https://fullnode.testnet.sui.io:443',
@@ -291,7 +291,8 @@ async function clockMoveCallGaslessTransactionAlternateVersion(): Promise<Gasles
 //
 // Check the status of a sponsorship. Generally not needed since you
 // execute transactions quickly after sponsoring and you can always
-// just re-sponsor for the rare sponsorship that expires.
+// just re-sponsor for the rare sponsorship that expires. Uncomment
+// the line under this function to test it.
 //
 async function checkSponsorshipStatusExample(): Promise<void> {
 
