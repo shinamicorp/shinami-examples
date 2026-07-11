@@ -71,6 +71,8 @@ if (gaslessTx) {
   console.log("digest", txDigest);
 
   // 7. Wait until the node has processed the transaction and print the status
+  //      Use waitForTransaction to ensure read after write consistency. See:
+  //      https://sdk.mystenlabs.com/sui/transactions/signing-and-execution#waiting-for-indexing
   const txInfo = await nodeClient.waitForTransaction({
     digest: txDigest
   });
@@ -142,21 +144,20 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
   gaslessTx: GaslessTransaction, keypair: Ed25519Keypair): Promise<string> {
 
   //  1. Send the GaslessTransaction to Shinami Gas Station for sponsorship.
-  let sponsoredResponse = await gasStationClient.sponsorTransaction(
+  const sponsoredResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // when gaslessTx.gasBudget is undefined we take advantage of Shinami auto-budgeting
   );
   console.log("\nsponsorTransactionBlock response (includes sender 'signature' and 'txBytes' with gas info now included):");
   console.log(sponsoredResponse);
 
   // 2. Sign the full transaction payload with the sender's key.
-  let senderSig = await Transaction.from(sponsoredResponse?.txBytes).sign(
+  const senderSig = await Transaction.from(sponsoredResponse?.txBytes).sign(
     { signer: keypair }
   );
 
   // 3. Submit the full transaction payload, along with the gas owner 
   // and sender signatures, for execution on the Sui network
-  const signatures = [senderSig?.signature, sponsoredResponse?.signature];
-  let response = await nodeClient.executeTransaction({
+  const response = await nodeClient.executeTransaction({
     transaction: fromBase64(sponsoredResponse?.txBytes),
     signatures: [senderSig?.signature, sponsoredResponse?.signature]
   });
@@ -228,7 +229,7 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
 //  We also call this function inside the `checkFundBalanceAndDepositIfNeeded` function.
 async function transferObjectToRecipientGaslessTransaction(objectID: string, senderAddress: string, recipientAddress: string):
   Promise<GaslessTransaction> {
-  let gaslessTx = await buildGaslessTransaction(
+  const gaslessTx = await buildGaslessTransaction(
     async (txb) => {
       txb.transferObjects(
         [txb.object(objectID)],
@@ -263,7 +264,7 @@ async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID:
 // Builds a Move call transaction for sponsorship in multiple steps.
 // 
 async function clockMoveCallGaslessTransactionAlternateVersion(): Promise<GaslessTransaction> {
-  let txb = new Transaction();
+  const txb = new Transaction();
   txb.moveCall({
     target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
     arguments: [txb.object('0x6')]
