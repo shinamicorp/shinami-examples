@@ -50,18 +50,18 @@ console.log(await keyClient.createSession("WALLET_ONE_SECRET"));
 
 
 // 8. Choose a sample code method to run
-// const txDigest = await
-//   sponsorSignExecuteInOneRequest(signer, gaslessTx);
-// // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
+const txDigest = await
+  sponsorSignExecuteInOneRequest(signer, gaslessTx);
+// sponsorSignExecuteInThreeRequests(signer, gaslessTx);
 
-// const txInfo = await nodeClient.waitForTransaction({
-//   digest: txDigest,
-//   options: { showEffects: true }
-// });
+const txInfo = await nodeClient.waitForTransaction({
+  digest: txDigest,
+  options: { showEffects: true }
+});
 
-// // You can look up the digest in a Sui explorer - make sure to switch to Testnet
-// console.log("\ntxDigest: ", txDigest);
-// console.log("status:", txInfo.effects?.status.status);
+// You can look up the digest in a Sui explorer - make sure to switch to Testnet
+console.log("\ntxDigest: ", txDigest);
+console.log("status:", txInfo.effects?.status.status);
 
 
 // 9. (optional) Uncomment the next line to sign a personal message with 
