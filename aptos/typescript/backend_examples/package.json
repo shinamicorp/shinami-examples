@@ -1,10 +1,11 @@
 {
     "devDependencies": {
-        "typescript": "^5.9.2"
+        "typescript": "^5.9.2",
+        "@types/node": "^26.1.0"
     },
     "dependencies": {
-        "@aptos-labs/ts-sdk": "^5.2.1",
-        "@shinami/clients": "^0.10.0"
+        "@aptos-labs/ts-sdk": "^7.2.0",
+        "@shinami/clients": "^0.12.0"
     },
     "type": "module"
 }

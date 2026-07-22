@@ -226,7 +226,8 @@ function App() {
         functionArguments: [new MoveString(message)]
       },
       options: {
-        expireTimestamp: expirationSeconds
+        expireTimestamp: expirationSeconds,
+        maxGasAmount: 20000
       }
     });
   }

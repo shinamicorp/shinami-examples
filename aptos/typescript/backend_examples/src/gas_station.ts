@@ -42,7 +42,6 @@ const aptosClient = new Aptos(new AptosConfig({ network: Network.TESTNET }));
 //   step 1. You may need to refresh the page after your first request.
 //   CAUTION: the faucet currently has a limit of 5 requests per day.
 
-
 // Step 3:
 //   a. Comment out the four lines from run 1.
 //   b. Uncomment the eight code lines below.

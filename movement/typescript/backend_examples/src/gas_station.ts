@@ -214,9 +214,9 @@ async function checkFundBalanceAndDepositIfNeeded(fundedSenderAccount: SingleKey
     const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
     console.log("Fund balance not in use (in Move):", (balance - inFlight) / 100_000_000);
 
-    // You'll want to deposit more than 1000 Octa, and what you want may be dynamic based on the
-    //  current (balance - inFlight) amount, etc. This is just a simple example.
-    const STANDARD_DEPOSIT_AMOUNT = 1000;
+    // You may want to deposit more than 100_000_000 Octa (1 MOVE), and what you want may be dynamic
+    //  based on the current (balance - inFlight) amount, etc. This is just a simple example.
+    const STANDARD_DEPOSIT_AMOUNT = 100_000_000;
 
     // Deposit address can be null - see our Help Center for how to generate an address: 
     //   https://docs.shinami.com/help-center/movement/gas-station-faq#how-do-i-generate-and-find-the-deposit-address-of-a-fund%3F
@@ -266,7 +266,8 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, expiration
             functionArguments: ["test_message"]
         },
         options: {
-            expireTimestamp: expirationSeconds
+            expireTimestamp: expirationSeconds,
+            maxGasAmount: 20000
         }
     });
 
@@ -294,7 +295,8 @@ async function buildMultiAgentScriptTransaction(sender: AccountAddress, secondar
             functionArguments: []
         },
         options: {
-            expireTimestamp: expirationSeconds
+            expireTimestamp: expirationSeconds,
+            maxGasAmount: 20000
         }
     });
 

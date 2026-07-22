@@ -107,6 +107,7 @@ dist
 
 # Node build output
 sui/typescript/backend_examples/build/
+sui/typescript/backend_examples_json_rpc/build/
 aptos/typescript/backend_examples/build/
 movement/typescript/backend_examples/build/
 

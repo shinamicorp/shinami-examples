@@ -9,7 +9,8 @@ import {
   GaslessTransaction
 } from "@shinami/clients/sui";
 import dotenvFlow from 'dotenv-flow';
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { SuiGrpcClient } from '@mysten/sui/grpc';
+import { fromBase64 } from "@mysten/sui/utils";
 
 
 // Get our environmental variables from our .env.local file
@@ -33,7 +34,10 @@ const walletClient = new WalletClient(GAS_AND_WALLET_TESTNET_ACCESS_KEY);
 
 // Create a Node client. Use any Sui RPC provider of your choice. 
 // It MUST target the same network as GAS_AND_WALLET_KEY.
-const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+const nodeClient = new SuiGrpcClient({
+  baseUrl: 'https://fullnode.testnet.sui.io:443',
+  network: 'mainnet',
+});
 
 // Create our Invisible Wallet 
 const signer = new ShinamiWalletSigner(
@@ -70,8 +74,9 @@ app.post('/invisibleWalletTx', async (req, res, next) => {
   try {
     const gaslessTx = await buildGasslessMoveCall(req.body.x, req.body.y);
     // We'll set the sender as a part of this request.
-    const sponsorAndExecuteResp = await signer.executeGaslessTransaction(gaslessTx);
-    res.json(sponsorAndExecuteResp);
+    const submitTxResp = await signer.executeGaslessTransaction(gaslessTx, ["transaction.digest"]);
+    let digest = submitTxResp.transaction?.transaction?.digest;
+    res.json(digest);
   } catch (err) {
     next(err);
   }
@@ -125,12 +130,15 @@ app.post('/buildSponsoredtx', async (req, res, next) => {
 // 2. Return the SuiTransactionBlockResponse to the FE
 app.post('/executeSponsoredTx', async (req, res, next) => {
   try {
-    const submitTxResp = await nodeClient.executeTransactionBlock({
-      transactionBlock: req.body.tx,
-      signature: [req.body.senderSig, req.body.sponsorSig]
+    const submitTxResp = await nodeClient.executeTransaction({
+      transaction: fromBase64(req.body.tx),
+      signatures: [req.body.senderSig, req.body.sponsorSig]
     });
 
-    res.json(submitTxResp);
+    console.log(submitTxResp);
+    let digest = submitTxResp.Transaction?.digest;
+    console.log(digest);
+    res.json(digest);
   } catch (err) {
     next(err);
   }

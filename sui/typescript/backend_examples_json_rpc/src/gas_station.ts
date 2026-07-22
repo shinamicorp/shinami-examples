@@ -2,6 +2,8 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
 import { Inputs, Transaction } from "@mysten/sui/transactions";
+import { fromB64 } from "@mysten/sui/utils";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { bcs } from '@mysten/sui/bcs';
 import {
   GasStationClient,
@@ -9,19 +11,13 @@ import {
   GaslessTransaction
 } from "@shinami/clients/sui";
 
-import { SuiGrpcClient } from '@mysten/sui/grpc';
-import { fromBase64 } from "@mysten/sui/utils";
-
-// 2. Copy your Testnet Gas Station key value
-const GAS_STATION_TESTNET_ACCESS_KEY = "{{gasStationTestnetAccessKey}}";
+// 2. Copy your Testnet Gas Station API key value
+const GAS_STATION_ACCESS_KEY = "{{API_KEY_VALUE}}";
 
 // 3. Set up your Gas Station and Node Service clients
-const gasStationClient = new GasStationClient(GAS_STATION_TESTNET_ACCESS_KEY);
-
-const nodeClient = new SuiGrpcClient({
-  baseUrl: 'https://fullnode.testnet.sui.io:443',
-  network: 'testnet',
-});
+// Use any Sui RPC provider of your choice. It MUST target the same network as GAS_ACCESS_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+const gasStationClient = new GasStationClient(GAS_STATION_ACCESS_KEY);
 
 // 4. Create a KeyPair to act as the sender
 async function generateSecretKey(): Promise<string> {
@@ -36,7 +32,7 @@ async function generateSecretKey(): Promise<string> {
 //  you'll need a fixed sender address. Your app should determine the best way to manage any 
 //  keys it controls.
 const ENCODED_SECRET_KEY = await generateSecretKey();
-const { scheme, secretKey } = decodeSuiPrivateKey(ENCODED_SECRET_KEY);
+const { schema, secretKey } = decodeSuiPrivateKey(ENCODED_SECRET_KEY);
 const keyPairFromSecretKey = Ed25519Keypair.fromSecretKey(secretKey);
 const SENDER_ADDRESS = keyPairFromSecretKey.toSuiAddress();
 console.log("sender address:", SENDER_ADDRESS);
@@ -55,10 +51,10 @@ const gaslessTx = await
   clockMoveCallGaslessTransaction();
 // clockMoveCallGaslessTransactionAlternateVersion();
 // clockMoveCallGaslessTransactionOfflineBuildManualBudget();
-// checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID, SENDER_ADDRESS);
+// checkFundBalanceAndDepositIfNeeded(SUI_COIN_TO_DEPOSIT_ID);
 // splitCoinOwnedByGaslessTransaction(COIN_TO_SPLIT_FROM_ID, SENDER_ADDRESS);
-// mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID, SENDER_ADDRESS);
-// transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, SENDER_ADDRESS, RECIPIENT_ADDRESS);
+// mergeCoinsGaslessTransaction(COIN_TO_SPLIT_FROM_ID, COIN_TO_MERGE_ID);
+// transferObjectToRecipientGaslessTransaction(OBJ_ID_TO_TRANSFER, RECIPIENT_ADDRESS);
 
 if (gaslessTx) {
   gaslessTx.sender = SENDER_ADDRESS;
@@ -68,18 +64,15 @@ if (gaslessTx) {
     gaslessTx, keyPairFromSecretKey
   );
 
-  console.log("digest", txDigest);
-
   // 7. Wait until the node has processed the transaction and print the status
-  //      Use waitForTransaction to ensure read after write consistency. See:
-  //      https://sdk.mystenlabs.com/sui/transactions/signing-and-execution#waiting-for-indexing
   const txInfo = await nodeClient.waitForTransaction({
-    digest: txDigest
+    digest: txDigest,
+    options: { showEffects: true }
   });
 
   // You can look up the digest in a Sui explorer - make sure to switch to Testnet
   console.log("\ntxDigest: ", txDigest);
-  console.log("status:", txInfo.Transaction?.status);
+  console.log("status:", txInfo.effects?.status.status);
 }
 
 //
@@ -144,30 +137,23 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
   gaslessTx: GaslessTransaction, keypair: Ed25519Keypair): Promise<string> {
 
   //  1. Send the GaslessTransaction to Shinami Gas Station for sponsorship.
-  const sponsoredResponse = await gasStationClient.sponsorTransaction(
+  const sponsorshipResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // when gaslessTx.gasBudget is undefined we take advantage of Shinami auto-budgeting
   );
   console.log("\nsponsorTransactionBlock response (includes sender 'signature' and 'txBytes' with gas info now included):");
-  console.log(sponsoredResponse);
+  console.log(sponsorshipResponse);
 
   // 2. Sign the full transaction payload with the sender's key.
-  const senderSig = await Transaction.from(sponsoredResponse?.txBytes).sign(
-    { signer: keypair }
-  );
+  const { signature: senderSignature } = await keypair.signTransaction(fromB64(sponsorshipResponse?.txBytes));
 
   // 3. Submit the full transaction payload, along with the gas owner 
   // and sender signatures, for execution on the Sui network
-  const response = await nodeClient.executeTransaction({
-    transaction: fromBase64(sponsoredResponse?.txBytes),
-    signatures: [senderSig?.signature, sponsoredResponse?.signature]
+  let executeResponse = await nodeClient.executeTransactionBlock({
+    transactionBlock: sponsorshipResponse?.txBytes,
+    signature: [senderSignature, sponsorshipResponse?.signature]
   });
 
-  if (!response.Transaction?.status?.success) {
-    const error = response.FailedTransaction?.effects;
-    throw new Error(`Transaction failed: ${error || 'Unknown error'}`);
-  }
-
-  return response.Transaction.digest;
+  return executeResponse.digest;
 }
 
 
@@ -175,7 +161,7 @@ async function sponsorAndExecuteTransactionForKeyPairSender(
 //
 // -- Check a fund's balance and deposit more SUI in the fund if it's low -- //
 //
-async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string, senderAddress: string):
+async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: string):
   Promise<GaslessTransaction | undefined> {
   const MIN_FUND_BALANCE_MIST = 50_000_000_000; // 50 SUI
   const { balance, inFlight, depositAddress } = await gasStationClient.getFund();
@@ -188,7 +174,6 @@ async function checkFundBalanceAndDepositIfNeeded(suiCoinObjectIdToDeposit: stri
     // works if there's a little SUI left.
     return await transferObjectToRecipientGaslessTransaction(
       suiCoinObjectIdToDeposit,
-      senderAddress,
       depositAddress
     );
   }
@@ -216,7 +201,6 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
       ]);
       // each new object created in a transaction must be sent to an owner
       txb.transferObjects([coin1, coin2], txb.pure(bcs.Address.serialize(recipientAddress)));
-      txb.setSender(recipientAddress);
     },
     {
       sui: nodeClient
@@ -227,15 +211,14 @@ async function splitCoinOwnedByGaslessTransaction(coinToSplitID: string, recipie
 //  Transfer one or more objects owned by the sender to the recipient.
 //  An easy example is a small coin you created with the above transaction.
 //  We also call this function inside the `checkFundBalanceAndDepositIfNeeded` function.
-async function transferObjectToRecipientGaslessTransaction(objectID: string, senderAddress: string, recipientAddress: string):
+async function transferObjectToRecipientGaslessTransaction(objectID: string, recipientAddress: string):
   Promise<GaslessTransaction> {
-  const gaslessTx = await buildGaslessTransaction(
+  let gaslessTx = await buildGaslessTransaction(
     async (txb) => {
       txb.transferObjects(
         [txb.object(objectID)],
         txb.pure(bcs.Address.serialize(recipientAddress))
       );
-      txb.setSender(senderAddress);
     },
     {
       sui: nodeClient
@@ -246,12 +229,11 @@ async function transferObjectToRecipientGaslessTransaction(objectID: string, sen
 
 //  Merge one coin (or more) into another, destroying the 
 //   small coin(s) and increasing the value of the large one.
-async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string, senderAddress: string):
+async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID: string):
   Promise<GaslessTransaction> {
   return await buildGaslessTransaction(
     async (txb) => {
       txb.mergeCoins(txb.object(targetCoinID), [txb.object(coinToMergeID)]);
-      txb.setSender(senderAddress);
     },
     {
       sui: nodeClient
@@ -264,7 +246,7 @@ async function mergeCoinsGaslessTransaction(targetCoinID: string, coinToMergeID:
 // Builds a Move call transaction for sponsorship in multiple steps.
 // 
 async function clockMoveCallGaslessTransactionAlternateVersion(): Promise<GaslessTransaction> {
-  const txb = new Transaction();
+  let txb = new Transaction();
   txb.moveCall({
     target: "0xfa0e78030bd16672174c2d6cc4cd5d1d1423d03c28a74909b2a148eda8bcca16::clock::access",
     arguments: [txb.object('0x6')]
@@ -292,8 +274,7 @@ async function clockMoveCallGaslessTransactionAlternateVersion(): Promise<Gasles
 //
 // Check the status of a sponsorship. Generally not needed since you
 // execute transactions quickly after sponsoring and you can always
-// just re-sponsor for the rare sponsorship that expires. Uncomment
-// the line under this function to test it.
+// just re-sponsor for the rare sponsorship that expires.
 //
 async function checkSponsorshipStatusExample(): Promise<void> {
 

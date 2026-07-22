@@ -16,7 +16,6 @@ import {
   UserTransactionResponse
 } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { WalletSelector as AntdWalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 import { WalletConnector as MuiWalletSelector } from "@aptos-labs/wallet-adapter-mui-design";
 
 

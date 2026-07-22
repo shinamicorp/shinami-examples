@@ -9,24 +9,21 @@ import {
 } from "@shinami/clients/sui";
 import { Transaction } from "@mysten/sui/transactions";
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
-import { SuiGrpcClient } from '@mysten/sui/grpc';
-import { fromBase64 } from "@mysten/sui/utils";
-
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 
 // 2. Copy your access key value. Must have Testnet rights to all Shinami services.
-const ALL_SERVICES_TESTNET_ACCESS_KEY = "{{allServicesTestnetAccessKey}}";
+const GAS_AND_WALLET_KEY = "{{API_KEY_VALUE}}";
 
 // 3. Set up a wallet id and an associated secret
 const WALLET_ONE_ID = "{{walletOneId}}";
 const WALLET_ONE_SECRET = "{{walletOneSecret}}";
 
 // 4. Instantiate your Shinami clients
-const keyClient = new KeyClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const walletClient = new WalletClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
-const nodeClient = new SuiGrpcClient({
-  baseUrl: 'https://fullnode.testnet.sui.io:443',
-  network: 'mainnet',
-});
+const keyClient = new KeyClient(GAS_AND_WALLET_KEY);
+const walletClient = new WalletClient(GAS_AND_WALLET_KEY);
+// And your Node client. Use any Sui RPC provider of your choice. 
+// It MUST target the same network as GAS_AND_WALLET_KEY.
+const nodeClient = new SuiClient({ url: getFullnodeUrl("testnet") });
 
 // 5. Create a signer for the Invisible Wallet
 const signer = new ShinamiWalletSigner(
@@ -48,20 +45,23 @@ const gaslessTx = await buildGaslessTransaction(
   { sui: nodeClient }
 );
 
+console.log(gaslessTx);
+console.log(await keyClient.createSession("WALLET_ONE_SECRET"));
+
+
 // 8. Choose a sample code method to run
 const txDigest = await
   sponsorSignExecuteInOneRequest(signer, gaslessTx);
 // sponsorSignExecuteInThreeRequests(signer, gaslessTx);
 
-if (txDigest != undefined) {
-  const txInfo = await nodeClient.waitForTransaction({
-    digest: txDigest
-  });
+const txInfo = await nodeClient.waitForTransaction({
+  digest: txDigest,
+  options: { showEffects: true }
+});
 
-  // You can look up the digest in a Sui explorer - make sure to switch to Testnet
-  console.log("\ntxDigest: ", txDigest);
-  console.log("status:", txInfo.Transaction?.status);
-}
+// You can look up the digest in a Sui explorer - make sure to switch to Testnet
+console.log("\ntxDigest: ", txDigest);
+console.log("status:", txInfo.effects?.status.status);
 
 
 // 9. (optional) Uncomment the next line to sign a personal message with 
@@ -73,13 +73,11 @@ if (txDigest != undefined) {
 //  Use The Invisible Wallet API's method to do all the sponsor, sign, and execute 
 //   transaction steps with one call. Returns the associated transaction digest if successful.
 async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner,
-  gaslessTx: GaslessTransaction): Promise<string | undefined> {
+  gaslessTx: GaslessTransaction): Promise<string> {
   const sponsorSignAndExecuteResponse = await signer.executeGaslessTransaction(
     gaslessTx, // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
-    ["balance_changes", "transaction.digest"]
-  );
-
-  return sponsorSignAndExecuteResponse.transaction?.transaction?.digest;
+  )
+  return sponsorSignAndExecuteResponse.digest;
 }
 
 
@@ -88,10 +86,10 @@ async function sponsorSignExecuteInOneRequest(signer: ShinamiWalletSigner,
 //   for more control and flexibility over the process when needed.
 //   Returns the associated transaction digest if successful.
 async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
-  gaslessTx: GaslessTransaction): Promise<string | undefined> {
+  gaslessTx: GaslessTransaction): Promise<string> {
 
   // 1. Sponsor the GaslessTransaction with a call to Gas Station
-  const gasStationClient = new GasStationClient(ALL_SERVICES_TESTNET_ACCESS_KEY);
+  const gasStationClient = new GasStationClient(GAS_AND_WALLET_KEY);
   gaslessTx.sender = await signer.getAddress();
   const sponsoredResponse = await gasStationClient.sponsorTransaction(
     gaslessTx // by not setting gaslessTx.gasBudget we take advantage of Shinami auto-budgeting
@@ -104,12 +102,11 @@ async function sponsorSignExecuteInThreeRequests(signer: ShinamiWalletSigner,
 
   // 3. Use the transaction bytes and sponsor signature produced by 
   //  `sponsorTransactionBlock` along with the sender's signature 
-  const executeSponsoredTxResponse = await nodeClient.executeTransaction({
-    transaction: fromBase64(sponsoredResponse.txBytes),
-    signatures: [senderSignature.signature, sponsoredResponse.signature],
-    include: { effects: true }
+  const executeSponsoredTxResponse = await nodeClient.executeTransactionBlock({
+    transactionBlock: sponsoredResponse.txBytes,
+    signature: [senderSignature.signature, sponsoredResponse.signature]
   });
-  return executeSponsoredTxResponse.Transaction?.digest;
+  return executeSponsoredTxResponse.digest;
 }
 
 

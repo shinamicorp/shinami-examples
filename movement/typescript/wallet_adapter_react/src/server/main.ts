@@ -211,7 +211,8 @@ async function buildSimpleMoveCallTransaction(sender: AccountAddress, message: s
       functionArguments: [new MoveString(message)]
     },
     options: {
-      expireTimestamp: expirationSeconds
+      expireTimestamp: expirationSeconds,
+      maxGasAmount: 20000
     }
   });
   return transaction;
